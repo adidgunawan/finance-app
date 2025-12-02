@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiBarChart2, FiRepeat, FiUsers, FiLogOut } from 'react-icons/fi';
+import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText } from 'react-icons/fi';
 
 const navItems = [
   { path: '/chart-of-accounts', label: 'Chart of Accounts', icon: FiBarChart2 },
   { path: '/transactions', label: 'Transactions', icon: FiRepeat },
   { path: '/contacts', label: 'Contacts', icon: FiUsers },
+  { path: '/reports', label: 'Reports', icon: FiFileText },
 ];
 
 export function Nav() {
@@ -65,6 +66,58 @@ export function Nav() {
 
   return (
     <nav className="nav">
+      <div
+        style={{
+          marginBottom: '24px',
+          paddingBottom: '16px',
+          borderBottom: '1px solid var(--border-color)',
+        }}
+      >
+        <Link
+          to="/"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            textDecoration: 'none',
+            color: 'var(--text-primary)',
+          }}
+        >
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              backgroundColor: 'var(--bg-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+              overflow: 'hidden',
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="Jenjun Logo"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+          </div>
+          <span
+            style={{
+              fontSize: '20px',
+              fontWeight: '600',
+              letterSpacing: '-0.5px',
+            }}
+          >
+            Jenjun
+          </span>
+        </Link>
+      </div>
       <div>
         {navItems.map((item) => {
           const IconComponent = item.icon;

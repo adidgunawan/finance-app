@@ -23,6 +23,61 @@ export function ChartOfAccounts() {
     new Set(['Asset', 'Liability', 'Equity', 'Income', 'Expense'])
   );
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+  const [accountsWithTransactions, setAccountsWithTransactions] = useState<Set<string>>(new Set());
+
+  // Check which accounts have linked transactions
+  useEffect(() => {
+    const checkAccountsWithTransactions = async () => {
+      if (accounts.length === 0) return;
+
+      const accountsWithTxns = new Set<string>();
+
+      // Check all accounts in parallel
+      const checks = accounts.map(async (account) => {
+        // Check transactions
+        const { data: transactions } = await supabase
+          .from('transactions')
+          .select('id')
+          .or(`paid_from_account_id.eq.${account.id},paid_to_account_id.eq.${account.id}`)
+          .limit(1);
+
+        // Check transaction items
+        const { data: items } = await supabase
+          .from('transaction_items')
+          .select('id')
+          .eq('account_id', account.id)
+          .limit(1);
+
+        // Check transfer costs
+        const { data: costs } = await supabase
+          .from('transfer_costs')
+          .select('id')
+          .eq('account_id', account.id)
+          .limit(1);
+
+        // Check child accounts
+        const { data: children } = await supabase
+          .from('accounts')
+          .select('id')
+          .eq('parent_id', account.id)
+          .limit(1);
+
+        if (
+          (transactions && transactions.length > 0) ||
+          (items && items.length > 0) ||
+          (costs && costs.length > 0) ||
+          (children && children.length > 0)
+        ) {
+          accountsWithTxns.add(account.id);
+        }
+      });
+
+      await Promise.all(checks);
+      setAccountsWithTransactions(accountsWithTxns);
+    };
+
+    checkAccountsWithTransactions();
+  }, [accounts]);
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
@@ -222,6 +277,7 @@ export function ChartOfAccounts() {
     const isExpanded = expandedParents.has(account.id);
     const indent = level * 24;
     const isParent = level === 0;
+    const hasLinkedTransactions = accountsWithTransactions.has(account.id);
 
     return (
       <Fragment key={account.id}>
@@ -275,10 +331,14 @@ export function ChartOfAccounts() {
                   e.stopPropagation();
                   handleDelete(account);
                 }}
+                disabled={hasLinkedTransactions}
                 style={{
                   fontSize: '12px',
                   padding: '4px 8px',
+                  opacity: hasLinkedTransactions ? 0.5 : 1,
+                  cursor: hasLinkedTransactions ? 'not-allowed' : 'pointer',
                 }}
+                title={hasLinkedTransactions ? 'Cannot delete account with linked transactions' : 'Delete account'}
               >
                 Delete
               </button>

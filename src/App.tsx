@@ -10,6 +10,7 @@ import { ExpenseForm } from './modules/transactions/ExpenseForm';
 import { TransferForm } from './modules/transactions/TransferForm';
 import { TransactionDetail } from './modules/transactions/TransactionDetail';
 import { Contacts } from './modules/contacts/Contacts';
+import { Reports } from './modules/reports/Reports';
 import { ToastProvider } from './contexts/ToastContext';
 import './styles/globals.css';
 
@@ -37,6 +38,7 @@ function App() {
                     <Route path="/transactions/transfer/edit/:id" element={<TransferForm />} />
                     <Route path="/transactions/:id" element={<TransactionDetail />} />
                     <Route path="/contacts" element={<Contacts />} />
+                    <Route path="/reports" element={<Reports />} />
                     <Route path="*" element={<Navigate to="/chart-of-accounts" replace />} />
                   </Routes>
                 </Layout>
