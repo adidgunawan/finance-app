@@ -33,7 +33,8 @@ export function useAccounts() {
       const accountsWithBalances = (accountsData || []).map((account) => {
         const balance = calculateAccountBalance(
           account.id,
-          (transactionsData || []) as Transaction[]
+          (transactionsData || []) as Transaction[],
+          account
         );
         return { ...account, balance };
       });
@@ -56,26 +57,107 @@ export function useAccounts() {
     name: string;
     type: Account['type'];
     parent_id?: string | null;
+    initial_balance?: number;
+    initial_balance_date?: string | null;
   }) => {
-    try {
-      const accountNumber = generateAccountNumber(accounts, accountData.type, accountData.parent_id || null);
+    const maxRetries = 5;
+    let retryCount = 0;
 
-      const { data, error: createError } = await supabase
-        .from('accounts')
-        .insert({
-          ...accountData,
-          account_number: accountNumber,
-        })
-        .select()
-        .single();
+    while (retryCount < maxRetries) {
+      try {
+        // Fetch latest accounts from database to ensure we have current data
+        const { data: latestAccounts, error: fetchError } = await supabase
+          .from('accounts')
+          .select('*')
+          .order('account_number', { ascending: true });
 
-      if (createError) throw createError;
-      await fetchAccounts();
-      return data;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
+        if (fetchError) throw fetchError;
+
+        // Generate account number based on latest data from database
+        let accountNumber = generateAccountNumber(
+          latestAccounts || [],
+          accountData.type,
+          accountData.parent_id || null
+        );
+
+        // Verify the number doesn't exist (handle race conditions)
+        const { data: existingAccounts, error: checkError } = await supabase
+          .from('accounts')
+          .select('account_number')
+          .eq('account_number', accountNumber)
+          .limit(1);
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          // PGRST116 is "not found" which is fine
+          throw checkError;
+        }
+
+        // If account number exists, find the next available number
+        if (existingAccounts && existingAccounts.length > 0) {
+          const sameTypeAccounts = (latestAccounts || []).filter(
+            (a) => a.type === accountData.type
+          );
+          if (sameTypeAccounts.length > 0) {
+            const maxNumber = Math.max(...sameTypeAccounts.map((a) => a.account_number));
+            accountNumber = maxNumber + 10;
+          } else {
+            // Fallback: use base number for type
+            const baseNumbers: Record<Account['type'], number> = {
+              Asset: 1000,
+              Liability: 2000,
+              Equity: 3000,
+              Income: 4000,
+              Expense: 5000,
+            };
+            accountNumber = baseNumbers[accountData.type] + (retryCount + 1) * 10;
+          }
+        }
+
+        const { data, error: createError } = await supabase
+          .from('accounts')
+          .insert({
+            name: accountData.name,
+            type: accountData.type,
+            parent_id: accountData.parent_id || null,
+            account_number: accountNumber,
+            initial_balance: accountData.initial_balance || 0,
+            initial_balance_date: accountData.initial_balance_date || null,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          // If it's a duplicate key error (PostgreSQL error code 23505) and we haven't exhausted retries, try again
+          if (
+            (createError.code === '23505' || createError.message?.includes('duplicate key')) &&
+            retryCount < maxRetries - 1
+          ) {
+            retryCount++;
+            // Wait a bit before retrying (exponential backoff)
+            await new Promise((resolve) => setTimeout(resolve, 50 * (retryCount + 1)));
+            continue;
+          }
+          throw createError;
+        }
+
+        await fetchAccounts();
+        return data;
+      } catch (err: any) {
+        // If it's the last retry or not a duplicate key error, throw
+        if (
+          retryCount >= maxRetries - 1 ||
+          (err.code !== '23505' && !err.message?.includes('duplicate key'))
+        ) {
+          setError(err.message);
+          throw err;
+        }
+        retryCount++;
+        // Wait before retrying
+        await new Promise((resolve) => setTimeout(resolve, 50 * (retryCount + 1)));
+      }
     }
+
+    throw new Error('Failed to create account after multiple attempts');
   };
 
   const updateAccount = async (id: string, updates: Partial<Account>) => {

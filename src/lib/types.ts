@@ -7,6 +7,8 @@ export interface Account {
   name: string;
   type: AccountType;
   parent_id: string | null;
+  initial_balance?: number;
+  initial_balance_date?: string | null;
   created_at: string;
   updated_at: string;
   balance?: number;

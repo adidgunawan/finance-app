@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useContacts } from './hooks/useContacts';
 import { Table, Column } from '../../components/Table/Table';
 import type { Contact } from '../../lib/types';

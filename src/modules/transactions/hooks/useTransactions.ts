@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import type { Transaction, TransactionItem, TransferCost, Attachment } from '../../../lib/types';
+import type { Transaction } from '../../../lib/types';
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);

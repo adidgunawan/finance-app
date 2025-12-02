@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Input } from '../../components/Form/Input';
 import { Select } from '../../components/Form/Select';
+import { DateInput } from '../../components/Form/DateInput';
+import { generateAccountNumber } from '../../lib/utils';
 import type { Account, AccountType } from '../../lib/types';
 
 interface AccountFormProps {
   account?: Account;
   accounts: Account[];
-  onSubmit: (data: { name: string; type: AccountType; parent_id: string | null }) => Promise<void>;
+  onSubmit: (data: { 
+    name: string; 
+    type: AccountType; 
+    parent_id: string | null;
+    initial_balance?: number;
+    initial_balance_date?: string | null;
+  }) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -14,8 +22,22 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
   const [name, setName] = useState(account?.name || '');
   const [type, setType] = useState<AccountType>(account?.type || 'Asset');
   const [parentId, setParentId] = useState(account?.parent_id || '');
+  const [initialBalance, setInitialBalance] = useState<number>(account?.initial_balance || 0);
+  const [initialBalanceDate, setInitialBalanceDate] = useState<string>(
+    account?.initial_balance_date || new Date().toISOString().split('T')[0]
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Calculate the generated account number based on current selections
+  const generatedAccountNumber = useMemo(() => {
+    if (account) {
+      // If editing, show existing account number
+      return account.account_number;
+    }
+    // If creating new, calculate based on type and parent
+    return generateAccountNumber(accounts, type, parentId || null);
+  }, [account, accounts, type, parentId]);
 
   const accountTypeOptions: { value: AccountType; label: string }[] = [
     { value: 'Asset', label: 'Asset' },
@@ -43,6 +65,8 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
         name: name.trim(),
         type,
         parent_id: parentId || null,
+        initial_balance: initialBalance,
+        initial_balance_date: initialBalanceDate || null,
       });
     } catch (err: any) {
       setError(err.message || 'Failed to save account');
@@ -54,6 +78,12 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
   return (
     <form onSubmit={handleSubmit}>
       <div className="form-row">
+        <Input
+          label="Account Number"
+          value={generatedAccountNumber}
+          disabled
+          style={{ backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed' }}
+        />
         <Input
           label="Account Name"
           value={name}
@@ -78,6 +108,22 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           options={parentOptions}
           placeholder="None"
           disabled={loading || parentOptions.length === 0}
+        />
+      </div>
+      <div className="form-row">
+        <Input
+          label="Initial Balance"
+          type="number"
+          step="0.01"
+          value={initialBalance}
+          onChange={(e) => setInitialBalance(parseFloat(e.target.value) || 0)}
+          disabled={loading}
+        />
+        <DateInput
+          label="Initial Balance Date"
+          value={initialBalanceDate}
+          onChange={(e) => setInitialBalanceDate(e.target.value)}
+          disabled={loading}
         />
       </div>
       {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
