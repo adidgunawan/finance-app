@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import { Layout } from './components/Layout/Layout';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { Login } from './pages/Login';
 import { ChartOfAccounts } from './modules/chart-of-accounts/ChartOfAccounts';
 import { TransactionList } from './modules/transactions/TransactionList';
@@ -25,6 +26,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <PWAInstallPrompt />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route

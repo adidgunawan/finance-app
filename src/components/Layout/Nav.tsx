@@ -22,7 +22,7 @@ export function Nav() {
   };
 
   return (
-    <nav className="nav" style={{ display: 'flex', flexDirection: 'column' }}>
+    <nav className="nav">
       <div>
         {navItems.map((item) => (
           <Link

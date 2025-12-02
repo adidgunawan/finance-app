@@ -369,7 +369,7 @@ tbody tr:last-child td {
 @media (max-width: 768px) {
   /* Hide desktop sidebar on mobile */
   .nav {
-    display: none;
+    display: none !important;
   }
   
   /* Show mobile bottom navigation */
@@ -576,6 +576,18 @@ tbody tr:last-child td {
     max-width: 95%;
     margin: 16px;
     max-height: 90vh;
+  }
+  
+  /* PWA Install Prompt mobile positioning */
+  .pwa-install-prompt {
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Desktop PWA Install Prompt */
+@media (min-width: 769px) {
+  .pwa-install-prompt {
+    bottom: 24px !important;
   }
 }
 
