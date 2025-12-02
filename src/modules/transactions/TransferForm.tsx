@@ -248,15 +248,16 @@ export function TransferForm() {
             </button>
           </div>
           {formData.costs.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Account</th>
-                  <th>Description</th>
-                  <th style={{ width: '150px' }}>Amount</th>
-                  <th style={{ width: '80px' }}>Actions</th>
-                </tr>
-              </thead>
+            <div className="line-items-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>Description</th>
+                    <th style={{ width: '150px' }}>Amount</th>
+                    <th style={{ width: '80px' }}>Actions</th>
+                  </tr>
+                </thead>
               <tbody>
                 {formData.costs.map((cost, index) => (
                   <tr key={index}>
@@ -310,7 +311,8 @@ export function TransferForm() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
           <div style={{ marginTop: '12px', fontWeight: 600 }}>
             Total: {formatCurrency(total, formData.currency)}

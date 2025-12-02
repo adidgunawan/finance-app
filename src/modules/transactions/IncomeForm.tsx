@@ -229,15 +229,16 @@ export function IncomeForm() {
               Add Item
             </button>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Account</th>
-                <th>Description</th>
-                <th style={{ width: '150px' }}>Amount</th>
-                <th style={{ width: '80px' }}>Actions</th>
-              </tr>
-            </thead>
+          <div className="line-items-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Description</th>
+                  <th style={{ width: '150px' }}>Amount</th>
+                  <th style={{ width: '80px' }}>Actions</th>
+                </tr>
+              </thead>
             <tbody>
               {formData.items.map((item, index) => (
                 <tr key={index}>
@@ -302,7 +303,8 @@ export function IncomeForm() {
                 <td></td>
               </tr>
             </tfoot>
-          </table>
+            </table>
+          </div>
         </div>
 
         <FileUpload

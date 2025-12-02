@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useAccounts } from './hooks/useAccounts';
 import { AccountForm } from './AccountForm';
 import { Modal } from '../../components/Modal/Modal';
@@ -186,7 +186,7 @@ export function ChartOfAccounts() {
     const isParent = level === 0;
 
     return (
-      <React.Fragment key={account.id}>
+      <Fragment key={account.id}>
         <tr
           style={{
             backgroundColor: 'var(--bg-primary)',
@@ -255,7 +255,7 @@ export function ChartOfAccounts() {
               .map((child) => renderAccountRow(child, level + 1, typeAccounts))}
           </>
         )}
-      </React.Fragment>
+      </Fragment>
     );
   };
 

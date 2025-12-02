@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
 export interface Column<T> {
   key: string;
@@ -108,7 +108,9 @@ export function Table<T extends { id: string }>({
           />
         </div>
       )}
-      <table>
+      
+      {/* Desktop Table View */}
+      <table className="desktop-table">
         <thead>
           <tr>
             {columns.map((column) => (
@@ -192,6 +194,52 @@ export function Table<T extends { id: string }>({
           )}
         </tbody>
       </table>
+      
+      {/* Mobile Card View */}
+      <div className="table-cards">
+        {sortedData.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+            {emptyMessage}
+          </div>
+        ) : (
+          sortedData.map((row) => (
+            <div
+              key={row.id}
+              className="table-card"
+              onClick={() => onRowClick && onRowClick(row)}
+              style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+            >
+              {columns.map((column) => {
+                const value = (row as any)[column.key];
+                return (
+                  <div key={column.key} className="table-card-row">
+                    <div>
+                      <div className="table-card-label">{column.label}</div>
+                      <div className="table-card-value">
+                        {column.render ? column.render(value, row) : value}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {onDelete && (
+                <div className="table-card-actions">
+                  <button
+                    className="danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(row);
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
