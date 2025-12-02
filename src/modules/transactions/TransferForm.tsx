@@ -1,0 +1,340 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+import { generateTransactionNumber } from '../../lib/utils/transactionNumber';
+import { DateInput } from '../../components/Form/DateInput';
+import { Select } from '../../components/Form/Select';
+import { TagInput } from '../../components/Form/TagInput';
+import { FileUpload } from '../../components/Form/FileUpload';
+import { Input } from '../../components/Form/Input';
+import type { TransferFormData, Account } from '../../lib/types';
+import { formatCurrency } from '../../lib/utils';
+
+export function TransferForm() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [transactionNumber, setTransactionNumber] = useState('');
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [cashAccounts, setCashAccounts] = useState<Account[]>([]);
+
+  const [formData, setFormData] = useState<TransferFormData>({
+    transaction_date: new Date().toISOString().split('T')[0],
+    tags: [],
+    paid_from_account_id: null,
+    paid_to_account_id: null,
+    currency: 'IDR',
+    amount: 0,
+    costs: [],
+    attachments: [],
+  });
+
+  useEffect(() => {
+    const loadData = async () => {
+      const { data: accountsData } = await supabase.from('accounts').select('*').order('account_number');
+
+      if (accountsData) {
+        setAccounts(accountsData);
+        setCashAccounts(accountsData.filter((a) => a.type === 'Asset'));
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Generate transaction number when date changes
+  useEffect(() => {
+    const generateNumber = async () => {
+      const date = new Date(formData.transaction_date);
+      const txnNum = await generateTransactionNumber('Transfer', date);
+      setTransactionNumber(txnNum);
+    };
+
+    generateNumber();
+  }, [formData.transaction_date]);
+
+  const total = formData.amount + formData.costs.reduce((sum, cost) => sum + (cost.amount || 0), 0);
+
+  const handleCostChange = (index: number, field: string, value: any) => {
+    const newCosts = [...formData.costs];
+    newCosts[index] = { ...newCosts[index], [field]: value };
+    setFormData({ ...formData, costs: newCosts });
+  };
+
+  const handleAddCost = () => {
+    setFormData({
+      ...formData,
+      costs: [...formData.costs, { account_id: '', description: '', amount: 0 }],
+    });
+  };
+
+  const handleRemoveCost = (index: number) => {
+    setFormData({
+      ...formData,
+      costs: formData.costs.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!formData.paid_from_account_id || !formData.paid_to_account_id) {
+      setError('Both Paid From and Paid To accounts are required');
+      return;
+    }
+
+    if (formData.paid_from_account_id === formData.paid_to_account_id) {
+      setError('Paid From and Paid To accounts must be different');
+      return;
+    }
+
+    if (formData.amount <= 0) {
+      setError('Amount must be greater than 0');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { data: transaction, error: txnError } = await supabase
+        .from('transactions')
+        .insert({
+          transaction_number: transactionNumber,
+          type: 'Transfer',
+          date: formData.transaction_date,
+          tags: formData.tags,
+          paid_from_account_id: formData.paid_from_account_id,
+          paid_to_account_id: formData.paid_to_account_id,
+          currency: formData.currency,
+          amount: formData.amount,
+          total: total,
+        })
+        .select()
+        .single();
+
+      if (txnError) throw txnError;
+
+      // Create transfer costs if any
+      if (formData.costs.length > 0) {
+        const { error: costsError } = await supabase.from('transfer_costs').insert(
+          formData.costs.map((cost) => ({
+            transaction_id: transaction.id,
+            account_id: cost.account_id,
+            description: cost.description,
+            amount: cost.amount,
+          }))
+        );
+
+        if (costsError) throw costsError;
+      }
+
+      // Upload attachments
+      if (formData.attachments.length > 0 && transaction) {
+        const uploadPromises = formData.attachments.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${transaction.id}/${Date.now()}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from('transaction-attachments')
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage.from('transaction-attachments').getPublicUrl(fileName);
+
+          return {
+            transaction_id: transaction.id,
+            file_url: urlData.publicUrl,
+            file_name: file.name,
+          };
+        });
+
+        const attachmentData = await Promise.all(uploadPromises);
+
+        const { error: attachError } = await supabase.from('attachments').insert(attachmentData);
+        if (attachError) throw attachError;
+      }
+
+      navigate(`/transactions/${transaction.id}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create transaction');
+      console.error('Error creating transaction:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cashAccountOptions = cashAccounts.map((a) => ({
+    value: a.id,
+    label: `${a.account_number} - ${a.name}`,
+  }));
+
+  const costAccountOptions = accounts.map((a) => ({
+    value: a.id,
+    label: `${a.account_number} - ${a.name}`,
+  }));
+
+  return (
+    <div className="container">
+      <div className="page-header">
+        <h1 className="page-title">New Transfer Transaction</h1>
+        <button onClick={() => navigate('/transactions')}>Cancel</button>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-row">
+          <Input label="Transaction Number" value={transactionNumber} disabled />
+          <DateInput
+            label="Transaction Date"
+            value={formData.transaction_date}
+            onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-row">
+          <Select
+            label="Paid From (Cash & Bank)"
+            value={formData.paid_from_account_id || ''}
+            onChange={(e) => setFormData({ ...formData, paid_from_account_id: e.target.value || null })}
+            options={cashAccountOptions}
+            placeholder="Select account"
+            required
+            disabled={loading}
+          />
+          <Select
+            label="Paid To (Cash & Bank)"
+            value={formData.paid_to_account_id || ''}
+            onChange={(e) => setFormData({ ...formData, paid_to_account_id: e.target.value || null })}
+            options={cashAccountOptions}
+            placeholder="Select account"
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-row">
+          <Input
+            label="Amount"
+            type="number"
+            step="0.01"
+            min="0"
+            value={formData.amount || ''}
+            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+            required
+            disabled={loading}
+          />
+          <Select
+            label="Currency"
+            value={formData.currency}
+            onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+            options={[{ value: 'IDR', label: 'IDR' }]}
+            disabled={loading}
+          />
+        </div>
+
+        <TagInput
+          label="Tags"
+          value={formData.tags}
+          onChange={(tags) => setFormData({ ...formData, tags })}
+        />
+
+        <div style={{ marginTop: '24px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h3>Optional Costs</h3>
+            <button type="button" onClick={handleAddCost} disabled={loading}>
+              Add Cost
+            </button>
+          </div>
+          {formData.costs.length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Description</th>
+                  <th style={{ width: '150px' }}>Amount</th>
+                  <th style={{ width: '80px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.costs.map((cost, index) => (
+                  <tr key={index}>
+                    <td>
+                      <select
+                        value={cost.account_id}
+                        onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
+                        required
+                        disabled={loading}
+                        style={{ width: '100%' }}
+                      >
+                        <option value="">Select account</option>
+                        {costAccountOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={cost.description}
+                        onChange={(e) => handleCostChange(index, 'description', e.target.value)}
+                        disabled={loading}
+                        style={{ width: '100%' }}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={cost.amount || ''}
+                        onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                        required
+                        disabled={loading}
+                        style={{ width: '100%' }}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCost(index)}
+                        disabled={loading}
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <div style={{ marginTop: '12px', fontWeight: 600 }}>
+            Total: {formatCurrency(total, formData.currency)}
+          </div>
+        </div>
+
+        <FileUpload
+          label="Attachments"
+          value={formData.attachments}
+          onChange={(files) => setFormData({ ...formData, attachments: files })}
+        />
+
+        {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
+
+        <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
+          <button type="submit" className="primary" disabled={loading}>
+            Create Transaction
+          </button>
+          <button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
