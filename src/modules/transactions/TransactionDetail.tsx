@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTransactions } from './hooks/useTransactions';
+import { useToast } from '../../contexts/ToastContext';
 import type { Transaction } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
@@ -8,6 +9,7 @@ export function TransactionDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { fetchTransaction, deleteTransaction } = useTransactions();
+  const { showError, showSuccess, showConfirm } = useToast();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,13 +34,19 @@ export function TransactionDetail() {
   };
 
   const handleDelete = async () => {
-    if (transaction && window.confirm(`Are you sure you want to delete transaction ${transaction.transaction_number}?`)) {
-      try {
-        await deleteTransaction(transaction.id);
-        navigate('/transactions');
-      } catch (err: any) {
-        alert(err.message || 'Failed to delete transaction');
-      }
+    if (transaction) {
+      showConfirm(
+        `Are you sure you want to delete transaction ${transaction.transaction_number}?`,
+        async () => {
+          try {
+            await deleteTransaction(transaction.id);
+            showSuccess('Transaction deleted successfully');
+            navigate('/transactions');
+          } catch (err: any) {
+            showError(err.message || 'Failed to delete transaction');
+          }
+        }
+      );
     }
   };
 

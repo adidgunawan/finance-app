@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { generateTransactionNumber } from '../../lib/utils/transactionNumber';
 import { DateInput } from '../../components/Form/DateInput';
@@ -12,6 +12,9 @@ import { formatCurrency } from '../../lib/utils';
 
 export function TransferForm() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = !!id;
+  const { showError, showSuccess } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionNumber, setTransactionNumber] = useState('');
@@ -35,23 +38,65 @@ export function TransferForm() {
 
       if (accountsData) {
         setAccounts(accountsData);
-        setCashAccounts(accountsData.filter((a) => a.type === 'Asset'));
+        setCashAccounts(accountsData.filter((a) => a.is_wallet === true));
       }
     };
 
     loadData();
   }, []);
 
-  // Generate transaction number when date changes
+  // Load transaction data when editing
   useEffect(() => {
-    const generateNumber = async () => {
-      const date = new Date(formData.transaction_date);
-      const txnNum = await generateTransactionNumber('Transfer', date);
-      setTransactionNumber(txnNum);
-    };
+    if (isEditing && id) {
+      const loadTransaction = async () => {
+        try {
+          setLoading(true);
+          const { data: transaction, error: txnError } = await supabase
+            .from('transactions')
+            .select('*, costs:transfer_costs(*)')
+            .eq('id', id)
+            .single();
 
-    generateNumber();
-  }, [formData.transaction_date]);
+          if (txnError) throw txnError;
+
+          setTransactionNumber(transaction.transaction_number);
+          setFormData({
+            transaction_date: transaction.date,
+            tags: transaction.tags || [],
+            paid_from_account_id: transaction.paid_from_account_id,
+            paid_to_account_id: transaction.paid_to_account_id,
+            currency: transaction.currency,
+            amount: transaction.amount || 0,
+            costs: transaction.costs?.map((cost: any) => ({
+              account_id: cost.account_id,
+              description: cost.description || '',
+              amount: cost.amount,
+            })) || [],
+            attachments: [],
+          });
+        } catch (err: any) {
+          setError(err.message || 'Failed to load transaction');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadTransaction();
+    }
+  }, [isEditing, id]);
+
+  // Generate transaction number when date changes (only for new transactions)
+  useEffect(() => {
+    if (!isEditing) {
+      const generateNumber = async () => {
+        const date = new Date(formData.transaction_date);
+        const txnNum = await generateTransactionNumber('Transfer', date);
+        setTransactionNumber(txnNum);
+      };
+
+      generateNumber();
+    }
+  }, [formData.transaction_date, isEditing]);
 
   const total = formData.amount + formData.costs.reduce((sum, cost) => sum + (cost.amount || 0), 0);
 
@@ -80,53 +125,94 @@ export function TransferForm() {
     setError(null);
 
     if (!formData.paid_from_account_id || !formData.paid_to_account_id) {
-      setError('Both Paid From and Paid To accounts are required');
+      showError('Both Paid From and Paid To accounts are required');
       return;
     }
 
     if (formData.paid_from_account_id === formData.paid_to_account_id) {
-      setError('Paid From and Paid To accounts must be different');
+      showError('Paid From and Paid To accounts must be different');
       return;
     }
 
     if (formData.amount <= 0) {
-      setError('Amount must be greater than 0');
+      showError('Amount must be greater than 0');
       return;
     }
 
     try {
       setLoading(true);
 
-      const { data: transaction, error: txnError } = await supabase
-        .from('transactions')
-        .insert({
-          transaction_number: transactionNumber,
-          type: 'Transfer',
-          date: formData.transaction_date,
-          tags: formData.tags,
-          paid_from_account_id: formData.paid_from_account_id,
-          paid_to_account_id: formData.paid_to_account_id,
-          currency: formData.currency,
-          amount: formData.amount,
-          total: total,
-        })
-        .select()
-        .single();
+      let transaction;
 
-      if (txnError) throw txnError;
+      if (isEditing && id) {
+        // Update transaction
+        const { data: updatedTransaction, error: txnError } = await supabase
+          .from('transactions')
+          .update({
+            date: formData.transaction_date,
+            tags: formData.tags,
+            paid_from_account_id: formData.paid_from_account_id,
+            paid_to_account_id: formData.paid_to_account_id,
+            currency: formData.currency,
+            amount: formData.amount,
+            total: total,
+          })
+          .eq('id', id)
+          .select()
+          .single();
 
-      // Create transfer costs if any
-      if (formData.costs.length > 0) {
-        const { error: costsError } = await supabase.from('transfer_costs').insert(
-          formData.costs.map((cost) => ({
-            transaction_id: transaction.id,
-            account_id: cost.account_id,
-            description: cost.description,
-            amount: cost.amount,
-          }))
-        );
+        if (txnError) throw txnError;
+        transaction = updatedTransaction;
 
-        if (costsError) throw costsError;
+        // Delete existing costs and create new ones
+        await supabase.from('transfer_costs').delete().eq('transaction_id', id);
+
+        if (formData.costs.length > 0) {
+          const { error: costsError } = await supabase.from('transfer_costs').insert(
+            formData.costs.map((cost) => ({
+              transaction_id: id,
+              account_id: cost.account_id,
+              description: cost.description,
+              amount: cost.amount,
+            }))
+          );
+
+          if (costsError) throw costsError;
+        }
+      } else {
+        // Create transaction
+        const { data: newTransaction, error: txnError } = await supabase
+          .from('transactions')
+          .insert({
+            transaction_number: transactionNumber,
+            type: 'Transfer',
+            date: formData.transaction_date,
+            tags: formData.tags,
+            paid_from_account_id: formData.paid_from_account_id,
+            paid_to_account_id: formData.paid_to_account_id,
+            currency: formData.currency,
+            amount: formData.amount,
+            total: total,
+          })
+          .select()
+          .single();
+
+        if (txnError) throw txnError;
+        transaction = newTransaction;
+
+        // Create transfer costs if any
+        if (formData.costs.length > 0) {
+          const { error: costsError } = await supabase.from('transfer_costs').insert(
+            formData.costs.map((cost) => ({
+              transaction_id: transaction.id,
+              account_id: cost.account_id,
+              description: cost.description,
+              amount: cost.amount,
+            }))
+          );
+
+          if (costsError) throw costsError;
+        }
       }
 
       // Upload attachments
@@ -155,10 +241,12 @@ export function TransferForm() {
         if (attachError) throw attachError;
       }
 
+      showSuccess(isEditing ? 'Transaction updated successfully' : 'Transaction created successfully');
       navigate(`/transactions/${transaction.id}`);
     } catch (err: any) {
-      setError(err.message || 'Failed to create transaction');
-      console.error('Error creating transaction:', err);
+      const errorMessage = err.message || (isEditing ? 'Failed to update transaction' : 'Failed to create transaction');
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -177,7 +265,7 @@ export function TransferForm() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1 className="page-title">New Transfer Transaction</h1>
+        <h1 className="page-title">{isEditing ? 'Edit Transfer Transaction' : 'New Transfer Transaction'}</h1>
         <button onClick={() => navigate('/transactions')}>Cancel</button>
       </div>
 
@@ -329,7 +417,7 @@ export function TransferForm() {
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
           <button type="submit" className="primary" disabled={loading}>
-            Create Transaction
+            {isEditing ? 'Update Transaction' : 'Create Transaction'}
           </button>
           <button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { generateTransactionNumber } from '../../lib/utils/transactionNumber';
 import { DateInput } from '../../components/Form/DateInput';
@@ -7,11 +7,15 @@ import { Select } from '../../components/Form/Select';
 import { TagInput } from '../../components/Form/TagInput';
 import { FileUpload } from '../../components/Form/FileUpload';
 import { Input } from '../../components/Form/Input';
+import { useToast } from '../../contexts/ToastContext';
 import type { ExpenseFormData, Account, Contact } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 
 export function ExpenseForm() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = !!id;
+  const { showError, showSuccess } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionNumber, setTransactionNumber] = useState('');
@@ -37,7 +41,7 @@ export function ExpenseForm() {
 
       if (accountsRes.data) {
         setAccounts(accountsRes.data);
-        setCashAccounts(accountsRes.data.filter((a) => a.type === 'Asset'));
+        setCashAccounts(accountsRes.data.filter((a) => a.is_wallet === true));
       }
       if (contactsRes.data) setContacts(contactsRes.data);
     };
@@ -45,16 +49,56 @@ export function ExpenseForm() {
     loadData();
   }, []);
 
-  // Generate transaction number when date changes
+  // Load transaction data when editing
   useEffect(() => {
-    const generateNumber = async () => {
-      const date = new Date(formData.transaction_date);
-      const txnNum = await generateTransactionNumber('Expense', date);
-      setTransactionNumber(txnNum);
-    };
+    if (isEditing && id) {
+      const loadTransaction = async () => {
+        try {
+          setLoading(true);
+          const { data: transaction, error: txnError } = await supabase
+            .from('transactions')
+            .select('*, items:transaction_items(*)')
+            .eq('id', id)
+            .single();
 
-    generateNumber();
-  }, [formData.transaction_date]);
+          if (txnError) throw txnError;
+
+          setTransactionNumber(transaction.transaction_number);
+          setFormData({
+            transaction_date: transaction.date,
+            tags: transaction.tags || [],
+            payee_id: transaction.payee_id,
+            paid_from_account_id: transaction.paid_from_account_id,
+            items: transaction.items?.map((item: any) => ({
+              account_id: item.account_id,
+              description: item.description || '',
+              amount: item.amount,
+            })) || [{ account_id: '', description: '', amount: 0 }],
+            attachments: [],
+          });
+        } catch (err: any) {
+          setError(err.message || 'Failed to load transaction');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadTransaction();
+    }
+  }, [isEditing, id]);
+
+  // Generate transaction number when date changes (only for new transactions)
+  useEffect(() => {
+    if (!isEditing) {
+      const generateNumber = async () => {
+        const date = new Date(formData.transaction_date);
+        const txnNum = await generateTransactionNumber('Expense', date);
+        setTransactionNumber(txnNum);
+      };
+
+      generateNumber();
+    }
+  }, [formData.transaction_date, isEditing]);
 
   const total = formData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
 
@@ -85,48 +129,88 @@ export function ExpenseForm() {
     setError(null);
 
     if (!formData.paid_from_account_id) {
-      setError('Paid From account is required');
+      showError('Paid From account is required');
       return;
     }
 
     if (formData.items.some((item) => !item.account_id || item.amount <= 0)) {
-      setError('All line items must have an account and amount > 0');
+      showError('All line items must have an account and amount > 0');
       return;
     }
 
     try {
       setLoading(true);
 
-      const { data: transaction, error: txnError } = await supabase
-        .from('transactions')
-        .insert({
-          transaction_number: transactionNumber,
-          type: 'Expense',
-          date: formData.transaction_date,
-          tags: formData.tags,
-          payee_id: formData.payee_id,
-          paid_from_account_id: formData.paid_from_account_id,
-          currency: 'IDR',
-          total: total,
-        })
-        .select()
-        .single();
+      let transaction;
 
-      if (txnError) throw txnError;
+      if (isEditing && id) {
+        // Update transaction
+        const { data: updatedTransaction, error: txnError } = await supabase
+          .from('transactions')
+          .update({
+            date: formData.transaction_date,
+            tags: formData.tags,
+            payee_id: formData.payee_id,
+            paid_from_account_id: formData.paid_from_account_id,
+            total: total,
+          })
+          .eq('id', id)
+          .select()
+          .single();
 
-      if (formData.items.length > 0) {
-        const { error: itemsError } = await supabase.from('transaction_items').insert(
-          formData.items.map((item) => ({
-            transaction_id: transaction.id,
-            account_id: item.account_id,
-            description: item.description,
-            amount: item.amount,
-          }))
-        );
+        if (txnError) throw txnError;
+        transaction = updatedTransaction;
 
-        if (itemsError) throw itemsError;
+        // Delete existing items and create new ones
+        await supabase.from('transaction_items').delete().eq('transaction_id', id);
+
+        if (formData.items.length > 0) {
+          const { error: itemsError } = await supabase.from('transaction_items').insert(
+            formData.items.map((item) => ({
+              transaction_id: id,
+              account_id: item.account_id,
+              description: item.description,
+              amount: item.amount,
+            }))
+          );
+
+          if (itemsError) throw itemsError;
+        }
+      } else {
+        // Create transaction
+        const { data: newTransaction, error: txnError } = await supabase
+          .from('transactions')
+          .insert({
+            transaction_number: transactionNumber,
+            type: 'Expense',
+            date: formData.transaction_date,
+            tags: formData.tags,
+            payee_id: formData.payee_id,
+            paid_from_account_id: formData.paid_from_account_id,
+            currency: 'IDR',
+            total: total,
+          })
+          .select()
+          .single();
+
+        if (txnError) throw txnError;
+        transaction = newTransaction;
+
+        if (formData.items.length > 0) {
+          const { error: itemsError } = await supabase.from('transaction_items').insert(
+            formData.items.map((item) => ({
+              transaction_id: transaction.id,
+              account_id: item.account_id,
+              description: item.description,
+              amount: item.amount,
+            }))
+          );
+
+          if (itemsError) throw itemsError;
+        }
       }
 
+      // Upload new attachments
       if (formData.attachments.length > 0 && transaction) {
         const uploadPromises = formData.attachments.map(async (file) => {
           const fileExt = file.name.split('.').pop();
@@ -152,10 +236,12 @@ export function ExpenseForm() {
         if (attachError) throw attachError;
       }
 
+      showSuccess(isEditing ? 'Transaction updated successfully' : 'Transaction created successfully');
       navigate(`/transactions/${transaction.id}`);
     } catch (err: any) {
-      setError(err.message || 'Failed to create transaction');
-      console.error('Error creating transaction:', err);
+      const errorMessage = err.message || (isEditing ? 'Failed to update transaction' : 'Failed to create transaction');
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -175,7 +261,7 @@ export function ExpenseForm() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1 className="page-title">New Expense Transaction</h1>
+        <h1 className="page-title">{isEditing ? 'Edit Expense Transaction' : 'New Expense Transaction'}</h1>
         <button onClick={() => navigate('/transactions')}>Cancel</button>
       </div>
 
@@ -312,7 +398,7 @@ export function ExpenseForm() {
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
           <button type="submit" className="primary" disabled={loading}>
-            Create Transaction
+            {isEditing ? 'Update Transaction' : 'Create Transaction'}
           </button>
           <button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel

@@ -7,7 +7,6 @@ A financial web application built with React, TypeScript, and Supabase. Features
 - **Chart of Accounts**: Hierarchical account structure with auto-generated account numbers
 - **Transactions**: Income, Expense, and Transfer transactions with multi-line items
 - **Contacts**: Manage payers and payees
-- **PWA**: Installable Progressive Web App
 - **Notion Light Mode Styling**: Clean, minimal interface
 
 ## Tech Stack
@@ -17,7 +16,6 @@ A financial web application built with React, TypeScript, and Supabase. Features
 - Vite
 - Supabase (Database, Auth, Storage)
 - React Router
-- PWA Support
 
 ## Setup
 

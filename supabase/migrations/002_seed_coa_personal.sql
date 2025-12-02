@@ -10,14 +10,14 @@ INSERT INTO accounts (account_number, name, type, parent_id) VALUES
 (1300, 'Other Assets', 'Asset', NULL);
 
 -- Insert child accounts for Current Assets
-INSERT INTO accounts (account_number, name, type, parent_id)
-SELECT 1010, 'Cash on Hand', 'Asset', id FROM accounts WHERE account_number = 1000
+INSERT INTO accounts (account_number, name, type, parent_id, is_wallet)
+SELECT 1010, 'Cash on Hand', 'Asset', id, true FROM accounts WHERE account_number = 1000
 UNION ALL
-SELECT 1020, 'Checking Account', 'Asset', id FROM accounts WHERE account_number = 1000
+SELECT 1020, 'Checking Account', 'Asset', id, true FROM accounts WHERE account_number = 1000
 UNION ALL
-SELECT 1030, 'Savings Account', 'Asset', id FROM accounts WHERE account_number = 1000
+SELECT 1030, 'Savings Account', 'Asset', id, true FROM accounts WHERE account_number = 1000
 UNION ALL
-SELECT 1040, 'Emergency Fund', 'Asset', id FROM accounts WHERE account_number = 1000;
+SELECT 1040, 'Emergency Fund', 'Asset', id, true FROM accounts WHERE account_number = 1000;
 
 -- Insert child accounts for Investments
 INSERT INTO accounts (account_number, name, type, parent_id)
@@ -54,10 +54,10 @@ INSERT INTO accounts (account_number, name, type, parent_id) VALUES
 (2100, 'Long-term Liabilities', 'Liability', NULL);
 
 -- Insert child accounts for Current Liabilities
-INSERT INTO accounts (account_number, name, type, parent_id)
-SELECT 2010, 'Credit Card - Primary', 'Liability', id FROM accounts WHERE account_number = 2000
+INSERT INTO accounts (account_number, name, type, parent_id, is_wallet)
+SELECT 2010, 'Credit Card - Primary', 'Liability', id, true FROM accounts WHERE account_number = 2000
 UNION ALL
-SELECT 2020, 'Credit Card - Secondary', 'Liability', id FROM accounts WHERE account_number = 2000
+SELECT 2020, 'Credit Card - Secondary', 'Liability', id, true FROM accounts WHERE account_number = 2000
 UNION ALL
 SELECT 2030, 'Personal Loan', 'Liability', id FROM accounts WHERE account_number = 2000
 UNION ALL

@@ -14,6 +14,7 @@ interface AccountFormProps {
     parent_id: string | null;
     initial_balance?: number;
     initial_balance_date?: string | null;
+    is_wallet?: boolean;
   }) => Promise<void>;
   onCancel: () => void;
 }
@@ -26,6 +27,7 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
   const [initialBalanceDate, setInitialBalanceDate] = useState<string>(
     account?.initial_balance_date || new Date().toISOString().split('T')[0]
   );
+  const [isWallet, setIsWallet] = useState<boolean>(account?.is_wallet || false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +69,7 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
         parent_id: parentId || null,
         initial_balance: initialBalance,
         initial_balance_date: initialBalanceDate || null,
+        is_wallet: isWallet,
       });
     } catch (err: any) {
       setError(err.message || 'Failed to save account');
@@ -125,6 +128,60 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           onChange={(e) => setInitialBalanceDate(e.target.value)}
           disabled={loading}
         />
+      </div>
+      <div className="form-group">
+        <label 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '10px', 
+            cursor: loading ? 'not-allowed' : 'pointer',
+            padding: '8px 12px',
+            borderRadius: '4px',
+            backgroundColor: isWallet ? 'var(--bg-secondary)' : 'transparent',
+            border: `1px solid ${isWallet ? 'var(--accent)' : 'var(--border-color)'}`,
+            transition: 'all 0.2s',
+            userSelect: 'none',
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) {
+              e.currentTarget.style.backgroundColor = isWallet ? 'var(--bg-hover)' : 'var(--bg-secondary)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = isWallet ? 'var(--bg-secondary)' : 'transparent';
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isWallet}
+            onChange={(e) => setIsWallet(e.target.checked)}
+            disabled={loading}
+            style={{ 
+              cursor: loading ? 'not-allowed' : 'pointer',
+              width: '18px',
+              height: '18px',
+              accentColor: 'var(--accent)',
+            }}
+          />
+          <span style={{ 
+            fontSize: '14px',
+            fontWeight: isWallet ? '500' : '400',
+            color: 'var(--text-primary)',
+            lineHeight: '1.4',
+          }}>
+            Wallet Account
+            <span style={{ 
+              display: 'block',
+              fontSize: '12px',
+              color: 'var(--text-secondary)',
+              fontWeight: '400',
+              marginTop: '2px',
+            }}>
+              Cash, Bank, Credit Card
+            </span>
+          </span>
+        </label>
       </div>
       {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
       <div style={{ display: 'flex', gap: '8px' }}>

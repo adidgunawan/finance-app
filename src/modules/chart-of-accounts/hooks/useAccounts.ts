@@ -59,6 +59,7 @@ export function useAccounts() {
     parent_id?: string | null;
     initial_balance?: number;
     initial_balance_date?: string | null;
+    is_wallet?: boolean;
   }) => {
     const maxRetries = 5;
     let retryCount = 0;
@@ -122,6 +123,7 @@ export function useAccounts() {
             account_number: accountNumber,
             initial_balance: accountData.initial_balance || 0,
             initial_balance_date: accountData.initial_balance_date || null,
+            is_wallet: accountData.is_wallet || false,
           })
           .select()
           .single();

@@ -1,11 +1,17 @@
 import { useState, useMemo } from 'react';
 import { useContacts } from './hooks/useContacts';
 import { Table, Column } from '../../components/Table/Table';
+import { Modal } from '../../components/Modal/Modal';
+import { ContactForm } from './ContactForm';
+import { useToast } from '../../contexts/ToastContext';
 import type { Contact } from '../../lib/types';
 
 export function Contacts() {
   const { contacts, loading, error, createContact, updateContact, deleteContact } = useContacts();
+  const { showError, showSuccess, showConfirm } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
   const filteredContacts = useMemo(() => {
     if (!searchTerm) return contacts;
@@ -18,30 +24,48 @@ export function Contacts() {
     );
   }, [contacts, searchTerm]);
 
-  const handleInlineEdit = async (contact: Contact, field: string, value: any) => {
-    try {
-      await updateContact(contact.id, { [field]: value });
-    } catch (err) {
-      console.error('Failed to update contact:', err);
-    }
-  };
-
   const handleDelete = async (contact: Contact) => {
-    if (window.confirm(`Are you sure you want to delete ${contact.name}?`)) {
-      try {
-        await deleteContact(contact.id);
-      } catch (err: any) {
-        alert(err.message || 'Failed to delete contact');
+    showConfirm(
+      `Are you sure you want to delete ${contact.name}?`,
+      async () => {
+        try {
+          await deleteContact(contact.id);
+          showSuccess('Contact deleted successfully');
+        } catch (err: any) {
+          showError(err.message || 'Failed to delete contact');
+        }
       }
-    }
+    );
   };
 
-  const handleAddRow = async () => {
-    try {
-      await createContact({ name: 'New Contact' });
-    } catch (err: any) {
-      alert(err.message || 'Failed to create contact');
+  const handleAdd = () => {
+    setEditingContact(null);
+    setShowForm(true);
+  };
+
+  const handleEdit = (contact: Contact) => {
+    setEditingContact(contact);
+    setShowForm(true);
+  };
+
+  const handleFormSubmit = async (data: {
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+  }) => {
+    if (editingContact) {
+      await updateContact(editingContact.id, data);
+    } else {
+      await createContact(data);
     }
+    setShowForm(false);
+    setEditingContact(null);
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setEditingContact(null);
   };
 
   const columns: Column<Contact>[] = [
@@ -77,11 +101,37 @@ export function Contacts() {
     return <div style={{ color: 'var(--error)' }}>Error: {error}</div>;
   }
 
+  const columnsWithActions: Column<Contact>[] = [
+    ...columns,
+    {
+      key: 'actions',
+      label: 'Actions',
+      width: '150px',
+      render: (_value, contact) => (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => handleEdit(contact)}
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          >
+            Edit
+          </button>
+          <button
+            className="danger"
+            onClick={() => handleDelete(contact)}
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">Contacts</h1>
-        <button className="primary" onClick={handleAddRow}>
+        <button className="primary" onClick={handleAdd}>
           Add Contact
         </button>
       </div>
@@ -98,11 +148,26 @@ export function Contacts() {
 
       <Table
         data={filteredContacts}
-        columns={columns}
-        onEdit={handleInlineEdit}
-        onDelete={handleDelete}
+        columns={columnsWithActions}
+        onRowClick={undefined}
+        onEdit={undefined}
+        onDelete={undefined}
         emptyMessage="No contacts found. Add your first contact to get started."
       />
+
+      {showForm && (
+        <Modal
+          isOpen={showForm}
+          onClose={handleFormCancel}
+          title={editingContact ? 'Edit Contact' : 'Add Contact'}
+        >
+          <ContactForm
+            contact={editingContact || undefined}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormCancel}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

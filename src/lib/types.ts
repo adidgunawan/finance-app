@@ -9,6 +9,7 @@ export interface Account {
   parent_id: string | null;
   initial_balance?: number;
   initial_balance_date?: string | null;
+  is_wallet?: boolean;
   created_at: string;
   updated_at: string;
   balance?: number;

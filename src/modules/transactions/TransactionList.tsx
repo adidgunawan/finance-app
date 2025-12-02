@@ -1,12 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTransactions } from './hooks/useTransactions';
 import { Table, Column } from '../../components/Table/Table';
+import { useToast } from '../../contexts/ToastContext';
 import type { Transaction } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 export function TransactionList() {
   const { transactions, loading, error, deleteTransaction } = useTransactions();
+  const { showError, showSuccess, showConfirm } = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -55,14 +57,43 @@ export function TransactionList() {
     navigate(`/transactions/${transaction.id}`);
   };
 
+  const handleEdit = (transaction: Transaction) => {
+    navigate(`/transactions/${transaction.type.toLowerCase()}/edit/${transaction.id}`);
+  };
+
   const handleDelete = async (transaction: Transaction) => {
-    if (window.confirm(`Are you sure you want to delete transaction ${transaction.transaction_number}?`)) {
-      try {
-        await deleteTransaction(transaction.id);
-      } catch (err: any) {
-        alert(err.message || 'Failed to delete transaction');
+    showConfirm(
+      `Are you sure you want to delete transaction ${transaction.transaction_number}?`,
+      async () => {
+        try {
+          await deleteTransaction(transaction.id);
+          showSuccess('Transaction deleted successfully');
+        } catch (err: any) {
+          showError(err.message || 'Failed to delete transaction');
+        }
       }
-    }
+    );
+  };
+
+  // Function to highlight matching text in search results
+  const highlightText = (text: string, searchTerm: string) => {
+    if (!searchTerm) return text;
+    
+    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => {
+      // Check if this part matches the search term (case-insensitive)
+      if (part.toLowerCase() === searchTerm.toLowerCase()) {
+        return (
+          <span key={index} style={{ backgroundColor: '#ffeb3b', color: 'var(--text-primary)' }}>
+            {part}
+          </span>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
   };
 
   const columns: Column<Transaction>[] = [
@@ -71,6 +102,24 @@ export function TransactionList() {
       label: 'Number',
       width: '150px',
       sortable: true,
+      render: (value, transaction) => (
+        <Link
+          to={`/transactions/${transaction.id}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            color: 'var(--accent)',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.textDecoration = 'underline';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.textDecoration = 'none';
+          }}
+        >
+          {searchTerm ? highlightText(value, searchTerm) : value}
+        </Link>
+      ),
     },
     {
       key: 'date',
@@ -84,16 +133,69 @@ export function TransactionList() {
       label: 'Type',
       width: '100px',
       sortable: true,
+      render: (value) => (searchTerm ? highlightText(value, searchTerm) : value),
     },
     {
-      key: 'payer',
-      label: 'Payer',
-      render: (value) => (value?.name || '-'),
+      key: 'contact',
+      label: 'Contact',
+      render: (_value, transaction) => {
+        const contact = transaction.type === 'Income' ? transaction.payer : transaction.payee;
+        const displayValue = contact?.name || '-';
+        return searchTerm && displayValue !== '-' ? highlightText(displayValue, searchTerm) : displayValue;
+      },
     },
     {
-      key: 'payee',
-      label: 'Payee',
-      render: (value) => (value?.name || '-'),
+      key: 'details',
+      label: 'Details',
+      render: (_value, transaction) => {
+        const parts: string[] = [];
+        
+        if (transaction.type === 'Income' && transaction.paid_to_account) {
+          parts.push(`To: ${transaction.paid_to_account.account_number} - ${transaction.paid_to_account.name}`);
+        } else if (transaction.type === 'Expense' && transaction.paid_from_account) {
+          parts.push(`From: ${transaction.paid_from_account.account_number} - ${transaction.paid_from_account.name}`);
+        } else if (transaction.type === 'Transfer') {
+          if (transaction.paid_from_account) {
+            parts.push(`From: ${transaction.paid_from_account.account_number} - ${transaction.paid_from_account.name}`);
+          }
+          if (transaction.paid_to_account) {
+            parts.push(`To: ${transaction.paid_to_account.account_number} - ${transaction.paid_to_account.name}`);
+          }
+        }
+        
+        if (transaction.items && transaction.items.length > 0) {
+          parts.push(`${transaction.items.length} item${transaction.items.length > 1 ? 's' : ''}`);
+        }
+        
+        return parts.length > 0 ? parts.join(' | ') : '-';
+      },
+    },
+    {
+      key: 'tags',
+      label: 'Tags',
+      render: (_value, transaction) => {
+        if (!transaction.tags || transaction.tags.length === 0) {
+          return '-';
+        }
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {transaction.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="tag"
+                style={{
+                  fontSize: '12px',
+                  padding: '2px 6px',
+                }}
+              >
+                {searchTerm && tag.toLowerCase().includes(searchTerm.toLowerCase())
+                  ? highlightText(tag, searchTerm)
+                  : tag}
+              </span>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: 'total',
@@ -101,6 +203,32 @@ export function TransactionList() {
       width: '150px',
       sortable: true,
       render: (value) => formatCurrency(value, 'IDR'),
+    },
+  ];
+
+  const columnsWithActions: Column<Transaction>[] = [
+    ...columns,
+    {
+      key: 'actions',
+      label: 'Actions',
+      width: '150px',
+      render: (_value, transaction) => (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => handleEdit(transaction)}
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          >
+            Edit
+          </button>
+          <button
+            className="danger"
+            onClick={() => handleDelete(transaction)}
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          >
+            Delete
+          </button>
+        </div>
+      ),
     },
   ];
 
@@ -198,33 +326,31 @@ export function TransactionList() {
         </div>
       </div>
 
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flex: '1', minWidth: '200px' }}
-          />
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            style={{ minWidth: '150px' }}
-          >
-            <option value="all">All Types</option>
-            <option value="Income">Income</option>
-            <option value="Expense">Expense</option>
-            <option value="Transfer">Transfer</option>
-          </select>
-        </div>
+      <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <input
+          type="text"
+          placeholder="Search transactions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ flex: '1', minWidth: '200px' }}
+        />
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          style={{ width: '180px' }}
+        >
+          <option value="all">All Types</option>
+          <option value="Income">Income</option>
+          <option value="Expense">Expense</option>
+          <option value="Transfer">Transfer</option>
+        </select>
       </div>
 
       <Table
         data={filteredTransactions}
-        columns={columns}
-        onRowClick={handleRowClick}
-        onDelete={handleDelete}
+        columns={columnsWithActions}
+        onRowClick={undefined}
+        onDelete={undefined}
         emptyMessage="No transactions found. Create your first transaction to get started."
       />
     </div>

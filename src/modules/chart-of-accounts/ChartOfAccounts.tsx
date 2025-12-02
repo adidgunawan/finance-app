@@ -3,6 +3,7 @@ import { useAccounts } from './hooks/useAccounts';
 import { AccountForm } from './AccountForm';
 import { Modal } from '../../components/Modal/Modal';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../contexts/ToastContext';
 import type { Account, AccountType } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 
@@ -13,6 +14,7 @@ interface AccountGroup {
 
 export function ChartOfAccounts() {
   const { accounts, loading, error, createAccount, updateAccount, deleteAccount } = useAccounts();
+  const { showError, showSuccess, showWarning, showConfirm } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -21,17 +23,40 @@ export function ChartOfAccounts() {
     new Set(['Asset', 'Liability', 'Equity', 'Income', 'Expense'])
   );
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
-  const [accountsWithLinkedTransactions, setAccountsWithLinkedTransactions] = useState<Set<string>>(new Set());
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
     const term = searchTerm.toLowerCase();
-    return accounts.filter(
-      (acc) =>
+    const accountsToInclude = new Set<string>();
+    
+    // Find all accounts that directly match the search term
+    const directlyMatchingAccounts = accounts.filter((acc) => {
+      return (
         acc.name.toLowerCase().includes(term) ||
         acc.account_number.toString().includes(term) ||
         acc.type.toLowerCase().includes(term)
-    );
+      );
+    });
+    
+    // For each matching account, include it and its parent hierarchy only
+    directlyMatchingAccounts.forEach((acc) => {
+      accountsToInclude.add(acc.id);
+      
+      // Include all ancestors (parents, grandparents, etc.) so we can see the hierarchy
+      let currentAccount = acc;
+      while (currentAccount.parent_id) {
+        const parent = accounts.find((a) => a.id === currentAccount.parent_id);
+        if (parent) {
+          accountsToInclude.add(parent.id);
+          currentAccount = parent;
+        } else {
+          break;
+        }
+      }
+    });
+    
+    // Only return accounts that match or are in the parent hierarchy of matches
+    return accounts.filter((acc) => accountsToInclude.has(acc.id));
   }, [accounts, searchTerm]);
 
   // Organize accounts by type and hierarchy
@@ -71,49 +96,32 @@ export function ChartOfAccounts() {
     }
   }, [accounts]);
 
-  // Check which accounts have linked transactions
+  // Auto-expand parents when searching to show matching children
   useEffect(() => {
-    const checkLinkedTransactions = async () => {
-      const linkedAccounts = new Set<string>();
-
-      for (const account of accounts) {
-        // Check transactions
-        const { data: transactions } = await supabase
-          .from('transactions')
-          .select('id')
-          .or(`paid_from_account_id.eq.${account.id},paid_to_account_id.eq.${account.id}`)
-          .limit(1);
-
-        // Check transaction items
-        const { data: items } = await supabase
-          .from('transaction_items')
-          .select('id')
-          .eq('account_id', account.id)
-          .limit(1);
-
-        // Check transfer costs
-        const { data: costs } = await supabase
-          .from('transfer_costs')
-          .select('id')
-          .eq('account_id', account.id)
-          .limit(1);
-
-        if (
-          (transactions && transactions.length > 0) ||
-          (items && items.length > 0) ||
-          (costs && costs.length > 0)
-        ) {
-          linkedAccounts.add(account.id);
+    if (searchTerm && filteredAccounts.length > 0) {
+      const accountsToExpand = new Set<string>();
+      
+      // Find all parent accounts that have matching children
+      filteredAccounts.forEach((acc) => {
+        if (acc.parent_id) {
+          accountsToExpand.add(acc.parent_id);
         }
-      }
-
-      setAccountsWithLinkedTransactions(linkedAccounts);
-    };
-
-    if (accounts.length > 0) {
-      checkLinkedTransactions();
+        // Also expand the account itself if it has children
+        const hasChildren = accounts.some((a) => a.parent_id === acc.id);
+        if (hasChildren) {
+          accountsToExpand.add(acc.id);
+        }
+      });
+      
+      // Expand all necessary parents
+      setExpandedParents((prev) => {
+        const newExpanded = new Set(prev);
+        accountsToExpand.forEach((id) => newExpanded.add(id));
+        return newExpanded;
+      });
     }
-  }, [accounts]);
+  }, [searchTerm, filteredAccounts, accounts]);
+
 
   const toggleTypeExpanded = (type: AccountType) => {
     const newExpanded = new Set(expandedTypes);
@@ -151,6 +159,7 @@ export function ChartOfAccounts() {
     parent_id: string | null;
     initial_balance?: number;
     initial_balance_date?: string | null;
+    is_wallet?: boolean;
   }) => {
     if (editingAccount) {
       await updateAccount(editingAccount.id, data);
@@ -169,13 +178,42 @@ export function ChartOfAccounts() {
   };
 
   const handleDelete = async (account: Account) => {
-    if (window.confirm(`Are you sure you want to delete account ${account.account_number} - ${account.name}?`)) {
-      try {
-        await deleteAccount(account.id);
-      } catch (err: any) {
-        alert(err.message || 'Failed to delete account');
+    showConfirm(
+      `Are you sure you want to delete account ${account.account_number} - ${account.name}?`,
+      async () => {
+        try {
+          await deleteAccount(account.id);
+          showSuccess('Account deleted successfully');
+        } catch (err: any) {
+          if (err.message?.includes('linked transactions')) {
+            showWarning('Cannot delete account with linked transactions');
+          } else {
+            showError(err.message || 'Failed to delete account');
+          }
+        }
       }
-    }
+    );
+  };
+
+  // Function to highlight matching text in search results
+  const highlightText = (text: string, searchTerm: string) => {
+    if (!searchTerm) return text;
+    
+    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => {
+      // Check if this part matches the search term (case-insensitive)
+      if (part.toLowerCase() === searchTerm.toLowerCase()) {
+        return (
+          <span key={index} style={{ backgroundColor: '#ffeb3b', color: 'var(--text-primary)' }}>
+            {part}
+          </span>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
   };
 
   const renderAccountRow = (account: Account, level: number = 0, typeAccounts: Account[]) => {
@@ -211,10 +249,14 @@ export function ChartOfAccounts() {
               </button>
             )}
             {!hasChildren && <span style={{ marginLeft: '20px' }} />}
-            <span style={{ fontWeight: isParent ? '600' : '400' }}>{account.account_number}</span>
+            <span style={{ fontWeight: isParent ? '600' : '400' }}>
+              {searchTerm ? highlightText(account.account_number.toString(), searchTerm) : account.account_number}
+            </span>
           </td>
           <td>
-            <span style={{ fontWeight: isParent ? '600' : '400' }}>{account.name}</span>
+            <span style={{ fontWeight: isParent ? '600' : '400' }}>
+              {searchTerm ? highlightText(account.name, searchTerm) : account.name}
+            </span>
           </td>
           <td style={{ textAlign: 'right', fontWeight: isParent ? '600' : '400' }}>
             {account.balance !== undefined ? formatCurrency(account.balance, 'IDR') : '-'}
@@ -229,19 +271,14 @@ export function ChartOfAccounts() {
               </button>
               <button
                 className="danger"
-                onClick={() => handleDelete(account)}
-                disabled={accountsWithLinkedTransactions.has(account.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(account);
+                }}
                 style={{
                   fontSize: '12px',
                   padding: '4px 8px',
-                  opacity: accountsWithLinkedTransactions.has(account.id) ? 0.5 : 1,
-                  cursor: accountsWithLinkedTransactions.has(account.id) ? 'not-allowed' : 'pointer',
                 }}
-                title={
-                  accountsWithLinkedTransactions.has(account.id)
-                    ? 'Cannot delete account with linked transactions'
-                    : 'Delete account'
-                }
               >
                 Delete
               </button>
@@ -263,106 +300,106 @@ export function ChartOfAccounts() {
     return <div>Loading...</div>;
   }
 
-  if (error) {
-    return <div style={{ color: 'var(--error)' }}>Error: {error}</div>;
-  }
-
   return (
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">Chart of Accounts</h1>
-        {!showForm && (
-          <button className="primary" onClick={handleCreate}>
-            Add Account
-          </button>
-        )}
+        <button className="primary" onClick={handleCreate}>
+          Add Account
+        </button>
       </div>
 
-      {showForm ? (
-        <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <input
+          type="text"
+          placeholder="Search accounts..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ maxWidth: '100%', width: '100%' }}
+        />
+      </div>
+      {groupedAccounts.length === 0 ? (
+        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          No accounts found. Create your first account to get started.
+        </div>
+      ) : (
+        <div>
+          {groupedAccounts.map((group) => {
+            const parentAccounts = getParentAccounts(group.accounts);
+            const isTypeExpanded = expandedTypes.has(group.type);
+
+            return (
+              <div key={group.type} style={{ marginBottom: '24px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: 'var(--bg-secondary)',
+                    borderBottom: '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                  onClick={() => toggleTypeExpanded(group.type)}
+                >
+                  <button
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '0 4px',
+                      marginRight: '8px',
+                      fontSize: '14px',
+                    }}
+                  >
+                    {isTypeExpanded ? '−' : '+'}
+                  </button>
+                  <span>{group.type}</span>
+                </div>
+                {isTypeExpanded && (
+                  <table style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
+                        <th style={{ textAlign: 'left' }}>Account Name</th>
+                        <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
+                        <th style={{ width: '150px' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parentAccounts
+                        .sort((a, b) => a.account_number - b.account_number)
+                        .map((parent) => renderAccountRow(parent, 0, group.accounts))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showForm && (
+        <Modal
+          isOpen={showForm}
+          onClose={handleFormCancel}
+          title="Add Account"
+        >
           <AccountForm
-            account={editingAccount || undefined}
+            account={undefined}
             accounts={accounts}
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}
           />
-        </div>
-      ) : (
-        <>
-          <div style={{ marginBottom: '16px' }}>
-            <input
-              type="text"
-              placeholder="Search accounts..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ maxWidth: '100%', width: '100%' }}
-            />
-          </div>
-          {groupedAccounts.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              No accounts found. Create your first account to get started.
-            </div>
-          ) : (
-            <div>
-              {groupedAccounts.map((group) => {
-                const parentAccounts = getParentAccounts(group.accounts);
-                const isTypeExpanded = expandedTypes.has(group.type);
-
-                return (
-                  <div key={group.type} style={{ marginBottom: '24px' }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '12px',
-                        background: 'var(--bg-secondary)',
-                        borderBottom: '1px solid var(--border-color)',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                      }}
-                      onClick={() => toggleTypeExpanded(group.type)}
-                    >
-                      <button
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '0 4px',
-                          marginRight: '8px',
-                          fontSize: '14px',
-                        }}
-                      >
-                        {isTypeExpanded ? '−' : '+'}
-                      </button>
-                      <span>{group.type}</span>
-                    </div>
-                    {isTypeExpanded && (
-                      <table style={{ width: '100%' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
-                            <th style={{ textAlign: 'left' }}>Account Name</th>
-                            <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
-                            <th style={{ width: '150px' }}>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {parentAccounts
-                            .sort((a, b) => a.account_number - b.account_number)
-                            .map((parent) => renderAccountRow(parent, 0, group.accounts))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
+        </Modal>
       )}
 
       {showEditModal && editingAccount && (
-        <Modal isOpen={showEditModal} onClose={handleFormCancel} title="Edit Account">
+        <Modal
+          isOpen={showEditModal}
+          onClose={handleFormCancel}
+          title="Edit Account"
+        >
           <AccountForm
             account={editingAccount}
             accounts={accounts}
