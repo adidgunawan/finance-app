@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Select } from '../../components/Form/Select';
 import { useBankConfig } from './hooks/useBankConfig';
 import { useToast } from '../../contexts/ToastContext';
-import type { Account } from '../../lib/types';
 
 interface BankConfigProps {
   accountId: string | null;

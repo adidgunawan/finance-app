@@ -141,7 +141,7 @@ export function IncomeForm() {
     try {
       setLoading(true);
 
-      let transaction;
+      let transaction: { id: string } | undefined;
 
       if (isEditing && id) {
         // Update transaction
@@ -197,10 +197,11 @@ export function IncomeForm() {
         transaction = newTransaction;
 
         // Create transaction items
-        if (formData.items.length > 0) {
+        if (formData.items.length > 0 && transaction) {
+          const transactionId = transaction.id;
           const { error: itemsError } = await supabase.from('transaction_items').insert(
             formData.items.map((item) => ({
-              transaction_id: transaction.id,
+              transaction_id: transactionId,
               account_id: item.account_id,
               description: item.description,
               amount: item.amount,
@@ -213,9 +214,10 @@ export function IncomeForm() {
 
       // Upload new attachments
       if (formData.attachments.length > 0 && transaction) {
+        const transactionId = transaction.id;
         const uploadPromises = formData.attachments.map(async (file) => {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${transaction.id}/${Date.now()}.${fileExt}`;
+          const fileName = `${transactionId}/${Date.now()}.${fileExt}`;
           const { error: uploadError } = await supabase.storage
             .from('transaction-attachments')
             .upload(fileName, file);
@@ -225,7 +227,7 @@ export function IncomeForm() {
           const { data: urlData } = supabase.storage.from('transaction-attachments').getPublicUrl(fileName);
 
           return {
-            transaction_id: transaction.id,
+            transaction_id: transactionId,
             file_url: urlData.publicUrl,
             file_name: file.name,
           };
@@ -237,8 +239,10 @@ export function IncomeForm() {
         if (attachError) throw attachError;
       }
 
-      showSuccess(isEditing ? 'Transaction updated successfully' : 'Transaction created successfully');
-      navigate(`/transactions/${transaction.id}`);
+      if (transaction) {
+        showSuccess(isEditing ? 'Transaction updated successfully' : 'Transaction created successfully');
+        navigate(`/transactions/${transaction.id}`);
+      }
     } catch (err: any) {
       const errorMessage = err.message || (isEditing ? 'Failed to update transaction' : 'Failed to create transaction');
       setError(errorMessage);

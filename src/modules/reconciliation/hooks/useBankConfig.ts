@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { BankConfiguration } from '../../../lib/types';
 
 export function useBankConfig() {
-  const [configs, setConfigs] = useState<BankConfiguration[]>([]);
+  const [configs] = useState<BankConfiguration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

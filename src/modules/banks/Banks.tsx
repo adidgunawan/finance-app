@@ -121,18 +121,37 @@ export function Banks() {
 
       <Table
         data={filteredBanks}
-        columns={columns}
-        keyField="id"
-        actions={(bank) => (
-          <>
-            <button onClick={() => handleEdit(bank)} style={{ marginRight: '8px' }}>
-              Edit
-            </button>
-            <button onClick={() => handleDelete(bank)} className="danger">
-              Delete
-            </button>
-          </>
-        )}
+        columns={[
+          ...columns,
+          {
+            key: 'actions',
+            label: 'Actions',
+            width: '150px',
+            render: (_value, bank) => (
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(bank);
+                  }}
+                  style={{ fontSize: '12px', padding: '4px 8px' }}
+                >
+                  Edit
+                </button>
+                <button
+                  className="danger"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(bank);
+                  }}
+                  style={{ fontSize: '12px', padding: '4px 8px' }}
+                >
+                  Delete
+                </button>
+              </div>
+            ),
+          },
+        ]}
         emptyMessage="No banks found"
       />
 

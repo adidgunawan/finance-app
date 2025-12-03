@@ -13,7 +13,7 @@ interface AccountGroup {
 }
 
 export function ChartOfAccounts() {
-  const { accounts, loading, error, createAccount, updateAccount, deleteAccount } = useAccounts();
+  const { accounts, loading, createAccount, updateAccount, deleteAccount } = useAccounts();
   const { showError, showSuccess, showWarning, showConfirm } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);

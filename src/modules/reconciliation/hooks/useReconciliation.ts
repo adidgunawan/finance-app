@@ -5,7 +5,6 @@ import type {
   ReconciliationCsvData,
   BankTransactionMatch,
   ParsedCsvRow,
-  Account,
 } from '../../../lib/types';
 import { findMatchingTransactions } from '../../../lib/utils/transactionMatcher';
 import { useTransactions } from '../../transactions/hooks/useTransactions';
@@ -15,7 +14,7 @@ export function useReconciliation() {
   const [currentSession, setCurrentSession] = useState<ReconciliationSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { transactions, refresh: refreshTransactions } = useTransactions();
+  const { transactions } = useTransactions();
   const loadingRef = React.useRef(false);
 
   // Load all draft sessions

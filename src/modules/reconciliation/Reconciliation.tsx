@@ -8,7 +8,7 @@ import { TransactionMatchModal } from './TransactionMatchModal';
 import { FileUpload } from '../../components/Form/FileUpload';
 import { Select } from '../../components/Form/Select';
 import { useToast } from '../../contexts/ToastContext';
-import type { ParsedCsvRow, ReconciliationCsvData, MatchStatus, Account } from '../../lib/types';
+import type { ParsedCsvRow, ReconciliationCsvData, MatchStatus } from '../../lib/types';
 
 export function Reconciliation() {
   const navigate = useNavigate();
@@ -24,7 +24,6 @@ export function Reconciliation() {
     finalizeSession,
     findMatchingTransactionsForRow,
     linkTransaction,
-    markForNewTransaction,
     loadMatches,
     refreshSessions,
     clearCurrentSession,
@@ -39,7 +38,7 @@ export function Reconciliation() {
   const [matchResults, setMatchResults] = useState<any[]>([]);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const isManuallyLoadingSession = React.useRef(false);
+  const isManuallyLoadingSession = useRef(false);
 
   const walletAccounts = accounts.filter((a) => a.is_wallet === true);
   
@@ -295,23 +294,6 @@ export function Reconciliation() {
     }
   };
 
-  // Handle marking for new transaction
-  const handleMarkForNewTransaction = async (rowIndex: number) => {
-    if (!currentSession) return;
-
-    try {
-      setIsProcessing(true);
-      await markForNewTransaction(currentSession.id, rowIndex);
-      const updatedMatches = new Map(matches);
-      updatedMatches.set(rowIndex, 'new');
-      setMatches(updatedMatches);
-      showSuccess('Marked for new transaction creation');
-    } catch (err: any) {
-      showError(err.message || 'Failed to mark for new transaction');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   // Handle finalize
   const handleFinalize = () => {

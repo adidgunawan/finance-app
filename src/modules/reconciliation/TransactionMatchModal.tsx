@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../components/Modal/Modal';
 import type { TransactionMatchResult, ParsedCsvRow } from '../../lib/types';
@@ -59,7 +58,7 @@ export function TransactionMatchModal({
               Potential Matches ({matches.length})
             </h3>
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-              {matches.map((match, index) => (
+              {matches.map((match) => (
                 <div
                   key={match.transaction.id}
                   style={{

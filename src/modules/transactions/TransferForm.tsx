@@ -7,6 +7,7 @@ import { Select } from '../../components/Form/Select';
 import { TagInput } from '../../components/Form/TagInput';
 import { FileUpload } from '../../components/Form/FileUpload';
 import { Input } from '../../components/Form/Input';
+import { useToast } from '../../contexts/ToastContext';
 import type { TransferFormData, Account } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 
@@ -142,7 +143,7 @@ export function TransferForm() {
     try {
       setLoading(true);
 
-      let transaction;
+      let transaction: { id: string } | undefined;
 
       if (isEditing && id) {
         // Update transaction
@@ -201,10 +202,11 @@ export function TransferForm() {
         transaction = newTransaction;
 
         // Create transfer costs if any
-        if (formData.costs.length > 0) {
+        if (formData.costs.length > 0 && transaction) {
+          const transactionId = transaction.id;
           const { error: costsError } = await supabase.from('transfer_costs').insert(
             formData.costs.map((cost) => ({
-              transaction_id: transaction.id,
+              transaction_id: transactionId,
               account_id: cost.account_id,
               description: cost.description,
               amount: cost.amount,
@@ -217,9 +219,10 @@ export function TransferForm() {
 
       // Upload attachments
       if (formData.attachments.length > 0 && transaction) {
+        const transactionId = transaction.id;
         const uploadPromises = formData.attachments.map(async (file) => {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${transaction.id}/${Date.now()}.${fileExt}`;
+          const fileName = `${transactionId}/${Date.now()}.${fileExt}`;
           const { error: uploadError } = await supabase.storage
             .from('transaction-attachments')
             .upload(fileName, file);
@@ -229,7 +232,7 @@ export function TransferForm() {
           const { data: urlData } = supabase.storage.from('transaction-attachments').getPublicUrl(fileName);
 
           return {
-            transaction_id: transaction.id,
+            transaction_id: transactionId,
             file_url: urlData.publicUrl,
             file_name: file.name,
           };
@@ -241,8 +244,10 @@ export function TransferForm() {
         if (attachError) throw attachError;
       }
 
-      showSuccess(isEditing ? 'Transaction updated successfully' : 'Transaction created successfully');
-      navigate(`/transactions/${transaction.id}`);
+      if (transaction) {
+        showSuccess(isEditing ? 'Transaction updated successfully' : 'Transaction created successfully');
+        navigate(`/transactions/${transaction.id}`);
+      }
     } catch (err: any) {
       const errorMessage = err.message || (isEditing ? 'Failed to update transaction' : 'Failed to create transaction');
       setError(errorMessage);

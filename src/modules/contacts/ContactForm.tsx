@@ -15,7 +15,7 @@ interface ContactFormProps {
 }
 
 export function ContactForm({ contact, onSubmit, onCancel }: ContactFormProps) {
-  const { showError, showSuccess } = useToast();
+  const { showError } = useToast();
   const [name, setName] = useState(contact?.name || '');
   const [phone, setPhone] = useState(contact?.phone || '');
   const [email, setEmail] = useState(contact?.email || '');

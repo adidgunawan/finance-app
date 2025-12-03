@@ -53,9 +53,6 @@ export function TransactionList() {
     return filtered;
   }, [transactions, searchTerm, typeFilter]);
 
-  const handleRowClick = (transaction: Transaction) => {
-    navigate(`/transactions/${transaction.id}`);
-  };
 
   const handleEdit = (transaction: Transaction) => {
     navigate(`/transactions/${transaction.type.toLowerCase()}/edit/${transaction.id}`);

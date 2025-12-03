@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useBalanceSheet, PeriodType, BalanceSheetData, PeriodRange } from './hooks/useBalanceSheet';
-import type { Account, AccountType } from '../../lib/types';
+import type { AccountType } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 
 interface AccountGroup {
@@ -154,13 +154,13 @@ export function BalanceSheet() {
     const indent = level * 24;
     const isParent = level === 0;
 
-    // Calculate children total if expanded
-    const childrenTotal = hasChildren && isExpanded
-      ? children.reduce((sum, child) => {
-          const childTotal = calculateTotal(getChildAccounts(child.account.id, typeAccounts));
-          return sum + child.balance + (childTotal > 0 ? childTotal : 0);
-        }, 0)
-      : 0;
+    // Calculate children total if expanded (currently unused but kept for future use)
+    // const childrenTotal = hasChildren && isExpanded
+    //   ? children.reduce((sum, child) => {
+    //       const childTotal = calculateTotal(getChildAccounts(child.account.id, typeAccounts));
+    //       return sum + child.balance + (childTotal > 0 ? childTotal : 0);
+    //     }, 0)
+    //   : 0;
 
     return (
       <Fragment key={accountData.account.id}>

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ParsedCsvRow, MatchStatus } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 

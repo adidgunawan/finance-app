@@ -22,7 +22,7 @@ export function useBalanceSheet() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async (startDate?: string, endDate?: string) => {
+  const fetchData = async (_startDate?: string, _endDate?: string) => {
     try {
       setLoading(true);
       
@@ -58,7 +58,7 @@ export function useBalanceSheet() {
     }
   };
 
-  const getBalanceSheetData = (startDate?: string, endDate?: string): BalanceSheetData[] => {
+  const getBalanceSheetData = (_startDate?: string, endDate?: string): BalanceSheetData[] => {
     // For balance sheet, we need cumulative balances up to the end date
     // Filter transactions up to and including the end date
     const filteredTransactions = endDate
