@@ -299,6 +299,17 @@ export function TransactionMatchModal({
   
   const expenseTotal = expenseFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
   const incomeTotal = incomeFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+  
+  // Amount matching validation
+  const csvAmount = csvRow?.amount || 0;
+  const checkAmountMatch = (transactionTotal: number) => {
+    const tolerance = 0.01; // Allow small floating point differences
+    return Math.abs(transactionTotal - csvAmount) <= tolerance;
+  };
+  
+  const getAmountDiscrepancy = (transactionTotal: number) => {
+    return transactionTotal - csvAmount;
+  };
 
   const handleExpenseItemChange = (index: number, field: string, value: any) => {
     const newItems = [...expenseFormData.items];
@@ -754,6 +765,40 @@ export function TransactionMatchModal({
                             <td style={{ fontWeight: 600 }}>{formatCurrency(expenseTotal, 'IDR')}</td>
                             <td></td>
                           </tr>
+                          {checkAmountMatch(expenseTotal) ? (
+                            <tr>
+                              <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
+                                <div style={{ 
+                                  color: '#4caf50', 
+                                  fontSize: '13px', 
+                                  fontWeight: '500',
+                                  textAlign: 'center',
+                                  padding: '8px',
+                                  backgroundColor: '#e8f5e9',
+                                  borderRadius: '4px'
+                                }}>
+                                  ✓ Amount matches CSV: {formatCurrency(csvAmount, 'IDR')}
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            <tr>
+                              <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
+                                <div style={{ 
+                                  color: '#f44336', 
+                                  fontSize: '13px', 
+                                  fontWeight: '500',
+                                  textAlign: 'center',
+                                  padding: '8px',
+                                  backgroundColor: '#ffebee',
+                                  borderRadius: '4px'
+                                }}>
+                                  Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} | 
+                                  Discrepancy: {formatCurrency(getAmountDiscrepancy(expenseTotal), 'IDR')}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                         </tfoot>
                       </table>
                     </div>
@@ -886,6 +931,40 @@ export function TransactionMatchModal({
                             <td style={{ fontWeight: 600 }}>{formatCurrency(incomeTotal, 'IDR')}</td>
                             <td></td>
                           </tr>
+                          {checkAmountMatch(incomeTotal) ? (
+                            <tr>
+                              <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
+                                <div style={{ 
+                                  color: '#4caf50', 
+                                  fontSize: '13px', 
+                                  fontWeight: '500',
+                                  textAlign: 'center',
+                                  padding: '8px',
+                                  backgroundColor: '#e8f5e9',
+                                  borderRadius: '4px'
+                                }}>
+                                  ✓ Amount matches CSV: {formatCurrency(csvAmount, 'IDR')}
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            <tr>
+                              <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
+                                <div style={{ 
+                                  color: '#f44336', 
+                                  fontSize: '13px', 
+                                  fontWeight: '500',
+                                  textAlign: 'center',
+                                  padding: '8px',
+                                  backgroundColor: '#ffebee',
+                                  borderRadius: '4px'
+                                }}>
+                                  Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} | 
+                                  Discrepancy: {formatCurrency(getAmountDiscrepancy(incomeTotal), 'IDR')}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                         </tfoot>
                       </table>
                     </div>
@@ -1032,8 +1111,34 @@ export function TransactionMatchModal({
                         </table>
                       </div>
                     )}
-                    <div style={{ marginTop: '12px', fontWeight: 600 }}>
-                      Total: {formatCurrency(transferTotal, transferFormData.currency)}
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ fontWeight: 600, marginBottom: '8px' }}>
+                        Total: {formatCurrency(transferTotal, transferFormData.currency)}
+                      </div>
+                      {checkAmountMatch(transferTotal) ? (
+                        <div style={{ 
+                          color: '#4caf50', 
+                          fontSize: '13px', 
+                          fontWeight: '500',
+                          padding: '8px',
+                          backgroundColor: '#e8f5e9',
+                          borderRadius: '4px'
+                        }}>
+                          ✓ Amount matches CSV: {formatCurrency(csvAmount, 'IDR')}
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          color: '#f44336', 
+                          fontSize: '13px', 
+                          fontWeight: '500',
+                          padding: '8px',
+                          backgroundColor: '#ffebee',
+                          borderRadius: '4px'
+                        }}>
+                          Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} | 
+                          Discrepancy: {formatCurrency(getAmountDiscrepancy(transferTotal), 'IDR')}
+                        </div>
+                      )}
                     </div>
                   </div>
 
