@@ -8,6 +8,7 @@ import { TagInput } from '../../components/Form/TagInput';
 import { FileUpload } from '../../components/Form/FileUpload';
 import { Input } from '../../components/Form/Input';
 import { useToast } from '../../contexts/ToastContext';
+import { ContactQuickAddModal } from '../../components/Modal/ContactQuickAddModal';
 import type { ExpenseFormData, Account, Contact } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 
@@ -22,6 +23,7 @@ export function ExpenseForm() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [cashAccounts, setCashAccounts] = useState<Account[]>([]);
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
 
   const [formData, setFormData] = useState<ExpenseFormData>({
     transaction_date: new Date().toISOString().split('T')[0],
@@ -260,7 +262,19 @@ export function ExpenseForm() {
     label: `${a.account_number} - ${a.name}`,
   }));
 
-  const contactOptions = contacts.map((c) => ({ value: c.id, label: c.name }));
+  const contactOptions = [
+    ...contacts.map((c) => ({ value: c.id, label: c.name })),
+    { value: '__add_new__', label: '➕ Add New...' },
+  ];
+
+  const handleContactAdded = async (newContact: Contact) => {
+    // Refresh contacts list
+    const { data: contactsRes } = await supabase.from('contacts').select('*').order('name');
+    if (contactsRes) setContacts(contactsRes);
+    
+    // Auto-select the newly created contact
+    setFormData({ ...formData, payee_id: newContact.id });
+  };
 
   return (
     <div className="container">
@@ -285,7 +299,16 @@ export function ExpenseForm() {
           <Select
             label="Payee"
             value={formData.payee_id || ''}
-            onChange={(e) => setFormData({ ...formData, payee_id: e.target.value || null })}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '__add_new__') {
+                setShowAddContactModal(true);
+                // Reset to empty so the "Add New" option doesn't stay selected
+                setFormData({ ...formData, payee_id: null });
+              } else {
+                setFormData({ ...formData, payee_id: value || null });
+              }
+            }}
             options={contactOptions}
             placeholder="Select payee"
             disabled={loading}
@@ -409,6 +432,12 @@ export function ExpenseForm() {
           </button>
         </div>
       </form>
+
+      <ContactQuickAddModal
+        isOpen={showAddContactModal}
+        onClose={() => setShowAddContactModal(false)}
+        onContactAdded={handleContactAdded}
+      />
     </div>
   );
 }

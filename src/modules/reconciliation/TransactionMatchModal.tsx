@@ -5,6 +5,7 @@ import { DateInput } from '../../components/Form/DateInput';
 import { Select } from '../../components/Form/Select';
 import { Input } from '../../components/Form/Input';
 import { TagInput } from '../../components/Form/TagInput';
+import { ContactQuickAddModal } from '../../components/Modal/ContactQuickAddModal';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { generateTransactionNumber } from '../../lib/utils/transactionNumber';
@@ -40,6 +41,8 @@ export function TransactionMatchModal({
   const [loading, setLoading] = useState(false);
   const [transactionNumber, setTransactionNumber] = useState('');
   const [transactionType, setTransactionType] = useState<'Expense' | 'Income' | 'Transfer'>('Expense');
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
+  const [contactsList, setContactsList] = useState<Contact[]>(contacts);
   
   // Expense form state
   const [expenseFormData, setExpenseFormData] = useState<ExpenseFormData>({
@@ -137,6 +140,56 @@ export function TransactionMatchModal({
         .catch(err => console.error('Error generating transaction number:', err));
     }
   }, [transactionType, showForm, csvRow]);
+
+  // Regenerate transaction number when date changes for Expense
+  useEffect(() => {
+    if (showForm && transactionType === 'Expense' && expenseFormData.transaction_date) {
+      generateTransactionNumber('Expense', new Date(expenseFormData.transaction_date))
+        .then(num => setTransactionNumber(num))
+        .catch(err => console.error('Error generating transaction number:', err));
+    }
+  }, [expenseFormData.transaction_date, transactionType, showForm]);
+
+  // Regenerate transaction number when date changes for Income
+  useEffect(() => {
+    if (showForm && transactionType === 'Income' && incomeFormData.transaction_date) {
+      generateTransactionNumber('Income', new Date(incomeFormData.transaction_date))
+        .then(num => setTransactionNumber(num))
+        .catch(err => console.error('Error generating transaction number:', err));
+    }
+  }, [incomeFormData.transaction_date, transactionType, showForm]);
+
+  // Regenerate transaction number when date changes for Transfer
+  useEffect(() => {
+    if (showForm && transactionType === 'Transfer' && transferFormData.transaction_date) {
+      generateTransactionNumber('Transfer', new Date(transferFormData.transaction_date))
+        .then(num => setTransactionNumber(num))
+        .catch(err => console.error('Error generating transaction number:', err));
+    }
+  }, [transferFormData.transaction_date, transactionType, showForm]);
+
+  // Load contacts on mount
+  useEffect(() => {
+    const loadContacts = async () => {
+      const { data } = await supabase.from('contacts').select('*').order('name');
+      if (data) setContactsList(data);
+    };
+    loadContacts();
+  }, []);
+
+  const handleContactAdded = async (newContact: Contact) => {
+    // Refresh contacts list
+    const { data: contactsRes } = await supabase.from('contacts').select('*').order('name');
+    if (contactsRes) {
+      setContactsList(contactsRes);
+      // Auto-select the newly created contact
+      if (transactionType === 'Expense') {
+        setExpenseFormData({ ...expenseFormData, payee_id: newContact.id });
+      } else if (transactionType === 'Income') {
+        setIncomeFormData({ ...incomeFormData, payer_id: newContact.id });
+      }
+    }
+  };
 
   if (!csvRow) return null;
 
@@ -295,7 +348,10 @@ export function TransactionMatchModal({
   const incomeAccountOptions = accounts
     .filter((a) => a.type === 'Income')
     .map((a) => ({ value: a.id, label: `${a.account_number} - ${a.name}` }));
-  const contactOptions = contacts.map((c) => ({ value: c.id, label: c.name }));
+  const contactOptions = [
+    ...contactsList.map((c) => ({ value: c.id, label: c.name })),
+    { value: '__add_new__', label: '➕ Add New...' },
+  ];
   
   const expenseTotal = expenseFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
   const incomeTotal = incomeFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -663,7 +719,16 @@ export function TransactionMatchModal({
                     <Select
                       label="Payee"
                       value={expenseFormData.payee_id || ''}
-                      onChange={(e) => setExpenseFormData({ ...expenseFormData, payee_id: e.target.value || null })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '__add_new__') {
+                          setShowAddContactModal(true);
+                          // Reset to empty so the "Add New" option doesn't stay selected
+                          setExpenseFormData({ ...expenseFormData, payee_id: null });
+                        } else {
+                          setExpenseFormData({ ...expenseFormData, payee_id: value || null });
+                        }
+                      }}
                       options={[{ value: '', label: 'Select payee' }, ...contactOptions]}
                       placeholder="Select payee"
                       disabled={loading}
@@ -829,7 +894,16 @@ export function TransactionMatchModal({
                     <Select
                       label="Payer"
                       value={incomeFormData.payer_id || ''}
-                      onChange={(e) => setIncomeFormData({ ...incomeFormData, payer_id: e.target.value || null })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '__add_new__') {
+                          setShowAddContactModal(true);
+                          // Reset to empty so the "Add New" option doesn't stay selected
+                          setIncomeFormData({ ...incomeFormData, payer_id: null });
+                        } else {
+                          setIncomeFormData({ ...incomeFormData, payer_id: value || null });
+                        }
+                      }}
                       options={[{ value: '', label: 'Select payer' }, ...contactOptions]}
                       placeholder="Select payer"
                       disabled={loading}
@@ -1155,6 +1229,12 @@ export function TransactionMatchModal({
           </>
         )}
       </div>
+
+      <ContactQuickAddModal
+        isOpen={showAddContactModal}
+        onClose={() => setShowAddContactModal(false)}
+        onContactAdded={handleContactAdded}
+      />
     </Modal>
   );
 }
