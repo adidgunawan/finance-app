@@ -8,25 +8,24 @@ interface AccountGroup {
   accounts: BalanceSheetData[];
 }
 
-interface ComparisonData {
-  period: PeriodRange;
-  data: BalanceSheetData[];
-}
 
 export function BalanceSheet() {
   const { accounts, transactions, loading, error, getBalanceSheetData, getPeriodRanges, fetchData } = useBalanceSheet();
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(null);
-  const [comparisonMode, setComparisonMode] = useState(false);
-  const [selectedPeriods, setSelectedPeriods] = useState<PeriodRange[]>([]);
+  const [numberOfPeriods, setNumberOfPeriods] = useState<number>(2);
   const [expandedTypes, setExpandedTypes] = useState<Set<AccountType>>(
     new Set(['Asset', 'Liability', 'Equity', 'Income', 'Expense'])
   );
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
 
-  const periodRanges = useMemo(() => {
+  const allPeriodRanges = useMemo(() => {
     return getPeriodRanges(periodType);
   }, [periodType, getPeriodRanges]);
+
+  // Get the latest N periods based on numberOfPeriods for comparison columns
+  const selectedPeriods = useMemo(() => {
+    return allPeriodRanges.slice(-numberOfPeriods);
+  }, [allPeriodRanges, numberOfPeriods]);
 
   // Fetch all data once - we filter by date in getBalanceSheetData
   useEffect(() => {
@@ -45,38 +44,20 @@ export function BalanceSheet() {
     }
   }, [accounts]);
 
-  // Auto-select last 2 months when comparison mode is enabled
-  useEffect(() => {
-    if (comparisonMode && periodType === 'monthly' && periodRanges.length >= 2 && selectedPeriods.length === 0) {
-      // Get the last 2 months (current month and last month)
-      const lastTwoMonths = periodRanges.slice(-2);
-      setSelectedPeriods(lastTwoMonths);
-    }
-  }, [comparisonMode, periodType, periodRanges, selectedPeriods.length]);
 
-  const currentData = useMemo(() => {
-    if (selectedPeriod) {
-      return getBalanceSheetData(selectedPeriod.startDate, selectedPeriod.endDate);
-    }
-    return getBalanceSheetData();
-  }, [selectedPeriod, accounts, transactions, getBalanceSheetData]);
-
+  // Get comparison data for all selected periods
   const comparisonData = useMemo(() => {
-    if (!comparisonMode || selectedPeriods.length === 0) return [];
-    
     return selectedPeriods.map(period => ({
       period,
       data: getBalanceSheetData(period.startDate, period.endDate),
     }));
-  }, [comparisonMode, selectedPeriods, accounts, transactions, getBalanceSheetData]);
+  }, [selectedPeriods, accounts, transactions, getBalanceSheetData]);
 
-  // Organize accounts by type and hierarchy
+  // Organize accounts by type and hierarchy (use first period's data for structure)
   const groupedAccounts = useMemo(() => {
     const typeOrder: AccountType[] = ['Asset', 'Liability', 'Equity', 'Income', 'Expense'];
     const groups: AccountGroup[] = [];
-    const dataToUse = comparisonMode && comparisonData.length > 0 
-      ? comparisonData[0].data 
-      : currentData;
+    const dataToUse = comparisonData.length > 0 ? comparisonData[0].data : [];
 
     typeOrder.forEach((type) => {
       const typeAccounts = dataToUse.filter((item) => item.account.type === type);
@@ -86,7 +67,7 @@ export function BalanceSheet() {
     });
 
     return groups;
-  }, [currentData, comparisonData, comparisonMode]);
+  }, [comparisonData]);
 
   // Get parent accounts (accounts with no parent)
   const getParentAccounts = (typeAccounts: BalanceSheetData[]): BalanceSheetData[] => {
@@ -101,12 +82,6 @@ export function BalanceSheet() {
   // Calculate total for a group of accounts
   const calculateTotal = (items: BalanceSheetData[]): number => {
     return items.reduce((sum, item) => sum + item.balance, 0);
-  };
-
-  // Get balance for an account in a specific period
-  const getAccountBalance = (accountId: string, periodData: BalanceSheetData[]): number => {
-    const account = periodData.find(item => item.account.id === accountId);
-    return account?.balance || 0;
   };
 
   const toggleTypeExpanded = (type: AccountType) => {
@@ -129,24 +104,17 @@ export function BalanceSheet() {
     setExpandedParents(newExpanded);
   };
 
-  const handlePeriodSelect = (period: PeriodRange) => {
-    if (comparisonMode) {
-      const isSelected = selectedPeriods.some(p => p.startDate === period.startDate && p.endDate === period.endDate);
-      if (isSelected) {
-        setSelectedPeriods(selectedPeriods.filter(p => !(p.startDate === period.startDate && p.endDate === period.endDate)));
-      } else {
-        setSelectedPeriods([...selectedPeriods, period]);
-      }
-    } else {
-      setSelectedPeriod(period);
-    }
+  // Get balance for an account in a specific period
+  const getAccountBalance = (accountId: string, periodData: BalanceSheetData[]): number => {
+    const account = periodData.find(item => item.account.id === accountId);
+    return account?.balance || 0;
   };
 
   const renderAccountRow = (
     accountData: BalanceSheetData,
     level: number = 0,
     typeAccounts: BalanceSheetData[],
-    comparisonPeriods?: ComparisonData[]
+    comparisonPeriods: typeof comparisonData
   ) => {
     const children = getChildAccounts(accountData.account.id, typeAccounts);
     const hasChildren = children.length > 0;
@@ -197,28 +165,20 @@ export function BalanceSheet() {
               {accountData.account.name}
             </span>
           </td>
-          {comparisonMode && comparisonPeriods ? (
-            <>
-              {comparisonPeriods.map((comp, idx) => {
-                const balance = getAccountBalance(accountData.account.id, comp.data);
-                return (
-                  <td
-                    key={idx}
-                    style={{
-                      textAlign: 'right',
-                      fontWeight: isParent ? '600' : '400',
-                    }}
-                  >
-                    {formatCurrency(balance, 'IDR')}
-                  </td>
-                );
-              })}
-            </>
-          ) : (
-            <td style={{ textAlign: 'right', fontWeight: isParent ? '600' : '400' }}>
-              {formatCurrency(accountData.balance, 'IDR')}
-            </td>
-          )}
+          {comparisonPeriods.map((comp, idx) => {
+            const balance = getAccountBalance(accountData.account.id, comp.data);
+            return (
+              <td
+                key={idx}
+                style={{
+                  textAlign: 'right',
+                  fontWeight: isParent ? '600' : '400',
+                }}
+              >
+                {formatCurrency(balance, 'IDR')}
+              </td>
+            );
+          })}
         </tr>
         {hasChildren && isExpanded && (
           <>
@@ -240,21 +200,19 @@ export function BalanceSheet() {
   }
 
   return (
-    <div className="container">
+    <div>
       <div className="page-header">
         <h1 className="page-title">Balance Sheet Report</h1>
       </div>
 
       {/* Period Selection */}
-      <div style={{ marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'center', whiteSpace: 'nowrap' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'center', whiteSpace: 'nowrap', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', whiteSpace: 'nowrap' }}>
           <label style={{ whiteSpace: 'nowrap' }}>Period Type:</label>
           <select
             value={periodType}
             onChange={(e) => {
               setPeriodType(e.target.value as PeriodType);
-              setSelectedPeriod(null);
-              setSelectedPeriods([]);
             }}
             style={{ padding: '6px 12px' }}
           >
@@ -265,66 +223,21 @@ export function BalanceSheet() {
         </div>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', whiteSpace: 'nowrap' }}>
-          <label style={{ display: 'flex', gap: '6px', alignItems: 'center', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            <input
-              type="checkbox"
-              checked={comparisonMode}
-              onChange={(e) => {
-                const isEnabled = e.target.checked;
-                setComparisonMode(isEnabled);
-                if (!isEnabled) {
-                  setSelectedPeriods([]);
-                  setSelectedPeriod(null);
-                } else {
-                  // Ensure period type is monthly for auto-selection
-                  if (periodType !== 'monthly') {
-                    setPeriodType('monthly');
-                  }
-                  // Auto-select will happen in useEffect when periodRanges updates
-                }
-              }}
-            />
-            Comparison Mode
-          </label>
-        </div>
-      </div>
-
-      {/* Period List */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>
-          {comparisonMode ? 'Select Periods to Compare (up to 5)' : 'Select Period'}
-        </h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {periodRanges.map((period) => {
-            const isSelected = comparisonMode
-              ? selectedPeriods.some(p => p.startDate === period.startDate && p.endDate === period.endDate)
-              : selectedPeriod?.startDate === period.startDate && selectedPeriod?.endDate === period.endDate;
-
-            return (
-              <button
-                key={`${period.startDate}-${period.endDate}`}
-                onClick={() => {
-                  if (comparisonMode && selectedPeriods.length >= 5 && !isSelected) {
-                    alert('Maximum 5 periods can be compared');
-                    return;
-                  }
-                  handlePeriodSelect(period);
-                }}
-                style={{
-                  padding: '8px 16px',
-                  border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border-color)'}`,
-                  backgroundColor: isSelected ? 'var(--accent)' : 'var(--bg-primary)',
-                  color: isSelected ? 'white' : 'var(--text-primary)',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: isSelected ? '600' : '400',
-                }}
-              >
-                {period.label}
-              </button>
-            );
-          })}
+          <label style={{ whiteSpace: 'nowrap' }}>Comparison:</label>
+          <select
+            value={numberOfPeriods}
+            onChange={(e) => {
+              const num = parseInt(e.target.value, 10);
+              setNumberOfPeriods(num);
+            }}
+            style={{ padding: '6px 12px', minWidth: '80px' }}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -338,7 +251,6 @@ export function BalanceSheet() {
           {groupedAccounts.map((group) => {
             const parentAccounts = getParentAccounts(group.accounts);
             const isTypeExpanded = expandedTypes.has(group.type);
-            const groupTotal = calculateTotal(group.accounts);
 
             return (
               <div key={group.type} style={{ marginBottom: '24px' }}>
@@ -370,22 +282,16 @@ export function BalanceSheet() {
                     </button>
                     <span>{group.type}</span>
                   </div>
-                  {comparisonMode && comparisonData.length > 0 ? (
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                      {comparisonData.map((comp, idx) => {
-                        const periodTotal = calculateTotal(comp.data.filter(item => item.account.type === group.type));
-                        return (
-                          <span key={idx} style={{ fontWeight: '600', minWidth: '120px', textAlign: 'right' }}>
-                            {formatCurrency(periodTotal, 'IDR')}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <span style={{ fontWeight: '600' }}>
-                      {formatCurrency(groupTotal, 'IDR')}
-                    </span>
-                  )}
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    {comparisonData.map((comp, idx) => {
+                      const periodTotal = calculateTotal(comp.data.filter(item => item.account.type === group.type));
+                      return (
+                        <span key={idx} style={{ fontWeight: '600', minWidth: '120px', textAlign: 'right' }}>
+                          {formatCurrency(periodTotal, 'IDR')}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
                 {isTypeExpanded && (
                   <table style={{ width: '100%' }}>
@@ -393,15 +299,11 @@ export function BalanceSheet() {
                       <tr>
                         <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
                         <th style={{ textAlign: 'left' }}>Account Name</th>
-                        {comparisonMode && comparisonData.length > 0 ? (
-                          comparisonData.map((comp, idx) => (
-                            <th key={idx} style={{ width: '150px', textAlign: 'right' }}>
-                              {comp.period.label}
-                            </th>
-                          ))
-                        ) : (
-                          <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
-                        )}
+                        {comparisonData.map((comp, idx) => (
+                          <th key={idx} style={{ width: '150px', textAlign: 'right' }}>
+                            {comp.period.label}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
@@ -411,7 +313,7 @@ export function BalanceSheet() {
                           parent,
                           0,
                           group.accounts,
-                          comparisonMode ? comparisonData : undefined
+                          comparisonData
                         ))}
                     </tbody>
                   </table>

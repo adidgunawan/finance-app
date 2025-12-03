@@ -40,7 +40,7 @@ function App() {
                     <Route path="/transactions/transfer/edit/:id" element={<TransferForm />} />
                     <Route path="/transactions/:id" element={<TransactionDetail />} />
                     <Route path="/contacts" element={<Contacts />} />
-                    <Route path="/reports" element={<Reports />} />
+                    <Route path="/reports/*" element={<Reports />} />
                     <Route path="/reconciliation" element={<Reconciliation />} />
                     <Route path="/banks" element={<Banks />} />
                     <Route path="*" element={<Navigate to="/chart-of-accounts" replace />} />
