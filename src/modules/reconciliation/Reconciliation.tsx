@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReconciliation } from './hooks/useReconciliation';
 import { useAccounts } from '../chart-of-accounts/hooks/useAccounts';
+import { useContacts } from '../contacts/hooks/useContacts';
 import { parseBCACsv } from '../../lib/utils/csvParser';
 import { CsvTransactionTable } from './CsvTransactionTable';
 import { TransactionMatchModal } from './TransactionMatchModal';
@@ -14,6 +15,7 @@ export function Reconciliation() {
   const navigate = useNavigate();
   const { showError, showSuccess, showConfirm } = useToast();
   const { accounts, loading: accountsLoading } = useAccounts();
+  const { contacts } = useContacts();
   const {
     sessions,
     currentSession,
@@ -263,36 +265,11 @@ export function Reconciliation() {
     }
   };
 
-  // Handle creating new transaction
-  const handleCreateNewTransaction = () => {
-    if (!selectedRow || !currentSession) return;
-
-    const account = walletAccounts.find((a) => a.id === currentSession.account_id);
-    if (!account) return;
-
-    // Pre-fill transaction form based on type
-    if (selectedRow.type === 'debit') {
-      // Debit = Expense
-      const params = new URLSearchParams({
-        date: selectedRow.date,
-        description: selectedRow.description,
-        amount: selectedRow.amount.toString(),
-        account_id: account.id,
-        from_reconciliation: 'true',
-      });
-      navigate(`/transactions/expense/new?${params.toString()}`);
-    } else {
-      // Credit = Income
-      const params = new URLSearchParams({
-        date: selectedRow.date,
-        description: selectedRow.description,
-        amount: selectedRow.amount.toString(),
-        account_id: account.id,
-        from_reconciliation: 'true',
-      });
-      navigate(`/transactions/income/new?${params.toString()}`);
-    }
-  };
+  // Get wallet account for the current session
+  const walletAccount = useMemo(() => {
+    if (!currentSession) return null;
+    return walletAccounts.find((a) => a.id === currentSession.account_id) || null;
+  }, [currentSession, walletAccounts]);
 
 
   // Handle finalize
@@ -574,7 +551,10 @@ export function Reconciliation() {
         csvRow={selectedRow}
         matches={matchResults}
         onLinkTransaction={handleLinkTransaction}
-        onCreateNewTransaction={handleCreateNewTransaction}
+        onCreateNewTransaction={() => {}}
+        walletAccount={walletAccount}
+        accounts={accounts}
+        contacts={contacts}
       />
     </div>
   );

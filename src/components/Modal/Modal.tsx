@@ -5,9 +5,10 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  maxWidth?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, maxWidth = '600px' }: ModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -31,7 +32,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           backgroundColor: 'var(--bg-primary)',
           borderRadius: '8px',
           padding: '24px',
-          maxWidth: '600px',
+          maxWidth: maxWidth,
           width: '90%',
           maxHeight: '90vh',
           overflow: 'auto',
