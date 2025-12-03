@@ -215,6 +215,7 @@ export function ChartOfAccounts() {
     initial_balance?: number;
     initial_balance_date?: string | null;
     is_wallet?: boolean;
+    bank_id?: string | null;
   }) => {
     if (editingAccount) {
       await updateAccount(editingAccount.id, data);

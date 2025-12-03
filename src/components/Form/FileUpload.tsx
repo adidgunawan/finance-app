@@ -18,6 +18,10 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
     } else {
       onChange(files);
     }
+    // Clear the input so the same file can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const removeFile = (index: number) => {
@@ -70,4 +74,5 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
     </div>
   );
 }
+
 

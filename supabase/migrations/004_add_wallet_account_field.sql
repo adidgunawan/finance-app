@@ -11,3 +11,4 @@ UPDATE accounts
 SET is_wallet = true 
 WHERE account_number IN (2010, 2020);
 
+

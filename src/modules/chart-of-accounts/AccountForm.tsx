@@ -1,8 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from '../../components/Form/Input';
 import { Select } from '../../components/Form/Select';
 import { DateInput } from '../../components/Form/DateInput';
+import { Modal } from '../../components/Modal/Modal';
 import { generateAccountNumber } from '../../lib/utils';
+import { useBanks } from '../banks/hooks/useBanks';
+import { useToast } from '../../contexts/ToastContext';
 import type { Account, AccountType } from '../../lib/types';
 
 interface AccountFormProps {
@@ -15,11 +18,14 @@ interface AccountFormProps {
     initial_balance?: number;
     initial_balance_date?: string | null;
     is_wallet?: boolean;
+    bank_id?: string | null;
   }) => Promise<void>;
   onCancel: () => void;
 }
 
 export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFormProps) {
+  const { banks, createBank } = useBanks();
+  const { showError, showSuccess } = useToast();
   const [name, setName] = useState(account?.name || '');
   const [type, setType] = useState<AccountType>(account?.type || 'Asset');
   const [parentId, setParentId] = useState(account?.parent_id || '');
@@ -28,8 +34,19 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
     account?.initial_balance_date || new Date().toISOString().split('T')[0]
   );
   const [isWallet, setIsWallet] = useState<boolean>(account?.is_wallet || false);
+  const [bankId, setBankId] = useState<string>(account?.bank_id || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [newBankName, setNewBankName] = useState('');
+  const [creatingBank, setCreatingBank] = useState(false);
+
+  // Reset bank_id when is_wallet is unchecked
+  useEffect(() => {
+    if (!isWallet) {
+      setBankId('');
+    }
+  }, [isWallet]);
 
   // Calculate the generated account number based on current selections
   const generatedAccountNumber = useMemo(() => {
@@ -53,6 +70,40 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
     .filter((a) => a.type === type && a.id !== account?.id)
     .map((a) => ({ value: a.id, label: `${a.account_number} - ${a.name}` }));
 
+  const bankOptions = [
+    { value: '', label: 'Select Bank...' },
+    ...banks.map((bank) => ({ value: bank.id, label: bank.name })),
+    { value: '__add_new__', label: '+ Add New Bank' },
+  ];
+
+  const handleCreateBank = async () => {
+    if (!newBankName.trim()) {
+      showError('Bank name is required');
+      return;
+    }
+
+    try {
+      setCreatingBank(true);
+      const newBank = await createBank(newBankName.trim());
+      setBankId(newBank.id);
+      setShowBankModal(false);
+      setNewBankName('');
+      showSuccess(`Bank "${newBank.name}" created successfully`);
+    } catch (err: any) {
+      showError(err.message || 'Failed to create bank');
+    } finally {
+      setCreatingBank(false);
+    }
+  };
+
+  const handleBankChange = (value: string) => {
+    if (value === '__add_new__') {
+      setShowBankModal(true);
+    } else {
+      setBankId(value);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -70,6 +121,7 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
         initial_balance: initialBalance,
         initial_balance_date: initialBalanceDate || null,
         is_wallet: isWallet,
+        bank_id: isWallet && bankId ? bankId : null,
       });
     } catch (err: any) {
       setError(err.message || 'Failed to save account');
@@ -183,6 +235,17 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           </span>
         </label>
       </div>
+      {isWallet && (
+        <div className="form-group">
+          <Select
+            label="Bank"
+            value={bankId}
+            onChange={(e) => handleBankChange(e.target.value)}
+            options={bankOptions}
+            disabled={loading}
+          />
+        </div>
+      )}
       {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
       <div style={{ display: 'flex', gap: '8px' }}>
         <button type="submit" className="primary" disabled={loading}>
@@ -192,6 +255,52 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           Cancel
         </button>
       </div>
+
+      <Modal
+        isOpen={showBankModal}
+        onClose={() => {
+          setShowBankModal(false);
+          setNewBankName('');
+        }}
+        title="Add New Bank"
+      >
+        <div className="form-group">
+          <Input
+            label="Bank Name"
+            value={newBankName}
+            onChange={(e) => setNewBankName(e.target.value)}
+            required
+            disabled={creatingBank}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleCreateBank();
+              }
+            }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowBankModal(false);
+              setNewBankName('');
+            }}
+            disabled={creatingBank}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleCreateBank}
+            className="primary"
+            disabled={creatingBank || !newBankName.trim()}
+          >
+            Create Bank
+          </button>
+        </div>
+      </Modal>
     </form>
   );
 }

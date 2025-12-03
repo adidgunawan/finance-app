@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText } from 'react-icons/fi';
+import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText, FiRefreshCw, FiCreditCard } from 'react-icons/fi';
 
 const navItems = [
   { path: '/chart-of-accounts', label: 'Chart of Accounts', icon: FiBarChart2 },
   { path: '/transactions', label: 'Transactions', icon: FiRepeat },
   { path: '/contacts', label: 'Contacts', icon: FiUsers },
   { path: '/reports', label: 'Reports', icon: FiFileText },
+  { path: '/reconciliation', label: 'Reconciliation', icon: FiRefreshCw },
+  { path: '/banks', label: 'Banks', icon: FiCreditCard },
 ];
 
 export function Nav() {

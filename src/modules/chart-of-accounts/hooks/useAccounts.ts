@@ -13,7 +13,10 @@ export function useAccounts() {
       setLoading(true);
       const { data: accountsData, error: fetchError } = await supabase
         .from('accounts')
-        .select('*')
+        .select(`
+          *,
+          bank:banks(*)
+        `)
         .order('account_number', { ascending: true });
 
       if (fetchError) throw fetchError;
@@ -60,6 +63,7 @@ export function useAccounts() {
     initial_balance?: number;
     initial_balance_date?: string | null;
     is_wallet?: boolean;
+    bank_id?: string | null;
   }) => {
     const maxRetries = 5;
     let retryCount = 0;
@@ -124,8 +128,12 @@ export function useAccounts() {
             initial_balance: accountData.initial_balance || 0,
             initial_balance_date: accountData.initial_balance_date || null,
             is_wallet: accountData.is_wallet || false,
+            bank_id: accountData.bank_id || null,
           })
-          .select()
+          .select(`
+            *,
+            bank:banks(*)
+          `)
           .single();
 
         if (createError) {
@@ -162,7 +170,7 @@ export function useAccounts() {
     throw new Error('Failed to create account after multiple attempts');
   };
 
-  const updateAccount = async (id: string, updates: Partial<Account>) => {
+  const updateAccount = async (id: string, updates: Partial<Account> & { bank_id?: string | null }) => {
     try {
       const { error: updateError } = await supabase
         .from('accounts')
