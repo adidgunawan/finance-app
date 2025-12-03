@@ -587,19 +587,18 @@ export function TransactionMatchModal({
             )}
 
             {/* Create New Transaction Button */}
-            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={handleShowForm}
                 style={{
-                  width: '100%',
-                  padding: '12px 16px',
+                  padding: '8px 16px',
                   border: 'none',
                   borderRadius: '4px',
                   background: 'var(--success)',
                   color: 'white',
                   cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
+                  fontSize: '13px',
+                  fontWeight: '500',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.opacity = '0.9';

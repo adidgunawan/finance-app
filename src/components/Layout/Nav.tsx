@@ -109,15 +109,32 @@ export function Nav() {
               }}
             />
           </div>
-          <span
+          <div
             style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              letterSpacing: '-0.5px',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            Jenjun
-          </span>
+            <span
+              style={{
+                fontSize: '20px',
+                fontWeight: '600',
+                letterSpacing: '-0.5px',
+              }}
+            >
+              Jenjun
+            </span>
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: '400',
+                color: 'var(--text-secondary)',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Finance App
+            </span>
+          </div>
         </Link>
       </div>
       <div>
