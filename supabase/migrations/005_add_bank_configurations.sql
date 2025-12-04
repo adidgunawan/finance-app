@@ -15,3 +15,4 @@ CREATE INDEX idx_bank_configurations_account_id ON bank_configurations(account_i
 CREATE TRIGGER update_bank_configurations_updated_at BEFORE UPDATE ON bank_configurations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+

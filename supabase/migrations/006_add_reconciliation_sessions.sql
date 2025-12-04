@@ -21,3 +21,4 @@ CREATE INDEX idx_reconciliation_sessions_created_at ON reconciliation_sessions(c
 CREATE TRIGGER update_reconciliation_sessions_updated_at BEFORE UPDATE ON reconciliation_sessions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+

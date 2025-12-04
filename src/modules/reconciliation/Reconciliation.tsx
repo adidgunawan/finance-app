@@ -24,6 +24,7 @@ export function Reconciliation() {
     loadSession,
     updateSession,
     finalizeSession,
+    deleteSession,
     findMatchingTransactionsForRow,
     linkTransaction,
     loadMatches,
@@ -298,6 +299,37 @@ export function Reconciliation() {
     );
   };
 
+  // Handle delete session
+  const handleDeleteSession = (sessionId: string) => {
+    const sessionToDelete = sessions.find((s) => s.id === sessionId);
+    const sessionLabel = sessionToDelete
+      ? `${sessionToDelete.account?.name || 'Account'} - ${sessionToDelete.account?.bank?.name || sessionToDelete.bank_name || 'Unknown'} (${new Date(sessionToDelete.created_at).toLocaleDateString()})`
+      : 'this session';
+
+    showConfirm(
+      `Are you sure you want to delete ${sessionLabel}? This action cannot be undone and will also delete all associated transaction matches.`,
+      async () => {
+        try {
+          setIsProcessing(true);
+          await deleteSession(sessionId);
+          
+          // Clear data if we deleted the current session
+          if (currentSession?.id === sessionId) {
+            setCsvData(null);
+            setMatches(new Map());
+            setCsvFile(null);
+          }
+          
+          showSuccess('Session deleted successfully');
+        } catch (err: any) {
+          showError(err.message || 'Failed to delete session');
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    );
+  };
+
   // Load existing session
   const handleLoadSession = async (sessionId: string) => {
     try {
@@ -402,51 +434,88 @@ export function Reconciliation() {
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Session</label>
             {sessions.length > 0 ? (
-              <div style={{ position: 'relative' }}>
-                <Select
-                  value={currentSession?.id || ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value) {
-                      handleLoadSession(value);
-                    } else {
-                      // Clear session selection - create new session
-                      // Clear everything synchronously
-                      isManuallyLoadingSession.current = true;
-                      clearCurrentSession();
-                      setCsvData(null);
-                      setMatches(new Map());
-                      setCsvFile(null);
-                      // Reset flag immediately - state updates will trigger re-render
-                      setTimeout(() => {
-                        isManuallyLoadingSession.current = false;
-                      }, 50);
-                    }
-                  }}
-                  disabled={isProcessing}
-                  options={[
-                    { value: '', label: 'Create New...' },
-                    ...sessions.map((session) => {
-                      const bankName = session.account?.bank?.name || session.bank_name || 'Unknown';
-                      return {
-                        value: session.id,
-                        label: `${session.account?.name || 'Account'} - ${bankName} (${new Date(session.created_at).toLocaleDateString()})`,
-                      };
-                    }),
-                  ]}
-                />
-                {isProcessing && (
-                  <div style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    fontSize: '12px',
-                    color: 'var(--text-secondary)',
-                    pointerEvents: 'none',
-                  }}>
-                    Loading...
-                  </div>
+              <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <Select
+                    value={currentSession?.id || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value) {
+                        handleLoadSession(value);
+                      } else {
+                        // Clear session selection - create new session
+                        // Clear everything synchronously
+                        isManuallyLoadingSession.current = true;
+                        clearCurrentSession();
+                        setCsvData(null);
+                        setMatches(new Map());
+                        setCsvFile(null);
+                        // Reset flag immediately - state updates will trigger re-render
+                        setTimeout(() => {
+                          isManuallyLoadingSession.current = false;
+                        }, 50);
+                      }
+                    }}
+                    disabled={isProcessing}
+                    options={[
+                      { value: '', label: 'Create New...' },
+                      ...sessions.map((session) => {
+                        const bankName = session.account?.bank?.name || session.bank_name || 'Unknown';
+                        return {
+                          value: session.id,
+                          label: `${session.account?.name || 'Account'} - ${bankName} (${new Date(session.created_at).toLocaleDateString()})`,
+                        };
+                      }),
+                    ]}
+                  />
+                  {isProcessing && (
+                    <div style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      pointerEvents: 'none',
+                    }}>
+                      Loading...
+                    </div>
+                  )}
+                </div>
+                {currentSession && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSession(currentSession.id)}
+                    disabled={isProcessing}
+                    style={{
+                      padding: '6px 12px',
+                      border: '1px solid var(--error)',
+                      borderRadius: '3px',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--error)',
+                      cursor: isProcessing ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      opacity: isProcessing ? 0.5 : 1,
+                      whiteSpace: 'nowrap',
+                      alignSelf: 'flex-start',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isProcessing) {
+                        e.currentTarget.style.backgroundColor = 'var(--error)';
+                        e.currentTarget.style.color = 'white';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isProcessing) {
+                        e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
+                        e.currentTarget.style.color = 'var(--error)';
+                      }
+                    }}
+                    title="Delete this session"
+                  >
+                    Delete
+                  </button>
                 )}
               </div>
             ) : (

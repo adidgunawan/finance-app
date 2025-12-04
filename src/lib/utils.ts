@@ -27,6 +27,13 @@ export function formatDateShort(date: string | Date): string {
   });
 }
 
+export function addDays(date: string | Date, days: number): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const result = new Date(d);
+  result.setDate(result.getDate() + days);
+  return result.toISOString().split('T')[0];
+}
+
 export function generateAccountNumber(
   accounts: Account[],
   type: Account['type'],

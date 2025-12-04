@@ -1,4 +1,5 @@
 import type { ParsedCsvRow, CsvMetadata, ReconciliationCsvData } from '../types';
+import { addDays } from '../utils';
 
 /**
  * Parse BCA bank CSV file format
@@ -146,7 +147,7 @@ function parseBCATransactionRow(line: string, currentYear: number): ParsedCsvRow
   }
 
   const date = new Date(year, month - 1, day);
-  const formattedDate = date.toISOString().split('T')[0];
+  const formattedDate = addDays(date.toISOString().split('T')[0], 1); // Add 1 day to CSV date
 
   // Parse amount
   const amount = parseFloat(amountStr.replace(/'/g, '').replace(/,/g, '')) || 0;
@@ -166,4 +167,5 @@ function parseBCATransactionRow(line: string, currentYear: number): ParsedCsvRow
     type,
   };
 }
+
 

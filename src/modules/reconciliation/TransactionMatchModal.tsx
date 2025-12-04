@@ -350,7 +350,7 @@ export function TransactionMatchModal({
     .map((a) => ({ value: a.id, label: `${a.account_number} - ${a.name}` }));
   const contactOptions = [
     ...contactsList.map((c) => ({ value: c.id, label: c.name })),
-    { value: '__add_new__', label: '➕ Add New...' },
+    { value: '__add_new__', label: 'Add New...' },
   ];
   
   const expenseTotal = expenseFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -729,7 +729,7 @@ export function TransactionMatchModal({
                           setExpenseFormData({ ...expenseFormData, payee_id: value || null });
                         }
                       }}
-                      options={[{ value: '', label: 'Select payee' }, ...contactOptions]}
+                      options={contactOptions}
                       placeholder="Select payee"
                       disabled={loading}
                     />
@@ -904,7 +904,7 @@ export function TransactionMatchModal({
                           setIncomeFormData({ ...incomeFormData, payer_id: value || null });
                         }
                       }}
-                      options={[{ value: '', label: 'Select payer' }, ...contactOptions]}
+                      options={contactOptions}
                       placeholder="Select payer"
                       disabled={loading}
                     />
@@ -1070,7 +1070,8 @@ export function TransactionMatchModal({
                       label="Paid From (Cash & Bank)"
                       value={transferFormData.paid_from_account_id || ''}
                       onChange={(e) => setTransferFormData({ ...transferFormData, paid_from_account_id: e.target.value || null })}
-                      options={[{ value: '', label: 'Select account' }, ...cashAccountOptions]}
+                      options={cashAccountOptions}
+                      placeholder="Select account"
                       required
                       disabled={loading}
                     />
@@ -1078,7 +1079,8 @@ export function TransactionMatchModal({
                       label="Paid To (Cash & Bank)"
                       value={transferFormData.paid_to_account_id || ''}
                       onChange={(e) => setTransferFormData({ ...transferFormData, paid_to_account_id: e.target.value || null })}
-                      options={[{ value: '', label: 'Select account' }, ...cashAccountOptions]}
+                      options={cashAccountOptions}
+                      placeholder="Select account"
                       required
                       disabled={loading}
                     />

@@ -137,3 +137,4 @@ function calculateStringSimilarity(str1: string, str2: string): number {
   return matches / Math.max(words1.length, words2.length);
 }
 
+

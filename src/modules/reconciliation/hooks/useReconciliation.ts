@@ -310,6 +310,35 @@ export function useReconciliation() {
     [currentSession, loadDraftSessions]
   );
 
+  // Delete a reconciliation session
+  const deleteSession = useCallback(
+    async (sessionId: string) => {
+      try {
+        setLoading(true);
+        // Delete the session (matches will be deleted automatically due to CASCADE)
+        const { error: deleteError } = await supabase
+          .from('reconciliation_sessions')
+          .delete()
+          .eq('id', sessionId);
+
+        if (deleteError) throw deleteError;
+
+        // Clear current session if it's the one being deleted
+        if (currentSession?.id === sessionId) {
+          setCurrentSession(null);
+        }
+
+        await loadDraftSessions();
+      } catch (err: any) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentSession, loadDraftSessions]
+  );
+
   // Load matches for current session
   const loadMatches = useCallback(
     async (sessionId: string): Promise<BankTransactionMatch[]> => {
@@ -358,6 +387,7 @@ export function useReconciliation() {
     createSession,
     updateSession,
     finalizeSession,
+    deleteSession,
     findMatchingTransactionsForRow,
     linkTransaction,
     markForNewTransaction,

@@ -265,7 +265,7 @@ export function IncomeForm() {
 
   const contactOptions = [
     ...contacts.map((c) => ({ value: c.id, label: c.name })),
-    { value: '__add_new__', label: '➕ Add New...' },
+    { value: '__add_new__', label: 'Add New...' },
   ];
 
   const handleContactAdded = async (newContact: Contact) => {

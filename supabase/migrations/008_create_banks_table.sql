@@ -22,3 +22,4 @@ INSERT INTO banks (name) VALUES
   ('Other')
 ON CONFLICT (name) DO NOTHING;
 
+
