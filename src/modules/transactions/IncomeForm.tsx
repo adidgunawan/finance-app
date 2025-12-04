@@ -341,10 +341,10 @@ export function IncomeForm() {
             </button>
           </div>
           <div className="line-items-table">
-            <table>
+            <table style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr>
-                  <th>Account</th>
+                  <th style={{ width: '400px' }}>Account</th>
                   <th>Description</th>
                   <th style={{ width: '150px' }}>Amount</th>
                   <th style={{ width: '80px' }}>Actions</th>
@@ -353,13 +353,13 @@ export function IncomeForm() {
             <tbody>
               {formData.items.map((item, index) => (
                 <tr key={index}>
-                  <td>
+                  <td style={{ width: '400px' }}>
                     <select
                       value={item.account_id}
                       onChange={(e) => handleItemChange(index, 'account_id', e.target.value)}
                       required
                       disabled={loading}
-                      style={{ width: '100%' }}
+                      style={{ width: '100%', maxWidth: '400px' }}
                     >
                       <option value="">Select account</option>
                       {accountOptions.map((opt) => (

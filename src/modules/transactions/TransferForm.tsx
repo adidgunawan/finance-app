@@ -342,10 +342,10 @@ export function TransferForm() {
           </div>
           {formData.costs.length > 0 && (
             <div className="line-items-table">
-              <table>
+              <table style={{ tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
-                    <th>Account</th>
+                    <th style={{ width: '400px' }}>Account</th>
                     <th>Description</th>
                     <th style={{ width: '150px' }}>Amount</th>
                     <th style={{ width: '80px' }}>Actions</th>
@@ -354,13 +354,13 @@ export function TransferForm() {
               <tbody>
                 {formData.costs.map((cost, index) => (
                   <tr key={index}>
-                    <td>
+                    <td style={{ width: '400px' }}>
                       <select
                         value={cost.account_id}
                         onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
                         required
                         disabled={loading}
-                        style={{ width: '100%' }}
+                        style={{ width: '100%', maxWidth: '400px' }}
                       >
                         <option value="">Select account</option>
                         {costAccountOptions.map((opt) => (

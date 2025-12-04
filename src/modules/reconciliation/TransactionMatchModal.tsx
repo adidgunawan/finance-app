@@ -757,10 +757,10 @@ export function TransactionMatchModal({
                       </button>
                     </div>
                     <div className="line-items-table" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                      <table style={{ width: '100%' }}>
+                      <table style={{ width: '100%', tableLayout: 'fixed' }}>
                         <thead>
                           <tr>
-                            <th>Account</th>
+                            <th style={{ width: '400px' }}>Account</th>
                             <th>Description</th>
                             <th style={{ width: '150px' }}>Amount</th>
                             <th style={{ width: '80px' }}>Actions</th>
@@ -769,13 +769,13 @@ export function TransactionMatchModal({
                         <tbody>
                           {expenseFormData.items.map((item, index) => (
                             <tr key={index}>
-                              <td>
+                              <td style={{ width: '400px' }}>
                                 <select
                                   value={item.account_id}
                                   onChange={(e) => handleExpenseItemChange(index, 'account_id', e.target.value)}
                                   required
                                   disabled={loading}
-                                  style={{ width: '100%', padding: '6px' }}
+                                  style={{ width: '100%', maxWidth: '400px', padding: '6px' }}
                                 >
                                   <option value="">Select account</option>
                                   {expenseAccountOptions.map((opt) => (
@@ -932,10 +932,10 @@ export function TransactionMatchModal({
                       </button>
                     </div>
                     <div className="line-items-table" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                      <table style={{ width: '100%' }}>
+                      <table style={{ width: '100%', tableLayout: 'fixed' }}>
                         <thead>
                           <tr>
-                            <th>Account</th>
+                            <th style={{ width: '400px' }}>Account</th>
                             <th>Description</th>
                             <th style={{ width: '150px' }}>Amount</th>
                             <th style={{ width: '80px' }}>Actions</th>
@@ -944,13 +944,13 @@ export function TransactionMatchModal({
                         <tbody>
                           {incomeFormData.items.map((item, index) => (
                             <tr key={index}>
-                              <td>
+                              <td style={{ width: '400px' }}>
                                 <select
                                   value={item.account_id}
                                   onChange={(e) => handleIncomeItemChange(index, 'account_id', e.target.value)}
                                   required
                                   disabled={loading}
-                                  style={{ width: '100%', padding: '6px' }}
+                                  style={{ width: '100%', maxWidth: '400px', padding: '6px' }}
                                 >
                                   <option value="">Select account</option>
                                   {incomeAccountOptions.map((opt) => (
@@ -1133,13 +1133,13 @@ export function TransactionMatchModal({
                           <tbody>
                             {transferFormData.costs.map((cost, index) => (
                               <tr key={index}>
-                                <td>
+                                <td style={{ width: '400px' }}>
                                   <select
                                     value={cost.account_id}
                                     onChange={(e) => handleTransferCostChange(index, 'account_id', e.target.value)}
                                     required
                                     disabled={loading}
-                                    style={{ width: '100%', padding: '6px' }}
+                                    style={{ width: '100%', maxWidth: '400px', padding: '6px' }}
                                   >
                                     <option value="">Select account</option>
                                     {costAccountOptions.map((opt) => (
