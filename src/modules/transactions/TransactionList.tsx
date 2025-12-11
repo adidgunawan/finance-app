@@ -8,12 +8,13 @@ import type { Transaction } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 export function TransactionList() {
-  const { transactions, loading, error, deleteTransaction } = useTransactions();
+  const { transactions, loading, error, deleteTransaction, deleteTransactions } = useTransactions();
   const { showError, showSuccess, showConfirm } = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showTransactionMenu, setShowTransactionMenu] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -32,6 +33,11 @@ export function TransactionList() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showTransactionMenu]);
+
+  // Clear selection when transactions change or filters change
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [transactions, typeFilter, searchTerm]);
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
@@ -68,6 +74,23 @@ export function TransactionList() {
           showSuccess('Transaction deleted successfully');
         } catch (err: any) {
           showError(err.message || 'Failed to delete transaction');
+        }
+      }
+    );
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.length === 0) return;
+
+    showConfirm(
+      `Are you sure you want to delete ${selectedIds.length} transaction${selectedIds.length > 1 ? 's' : ''}?`,
+      async () => {
+        try {
+          await deleteTransactions(selectedIds);
+          setSelectedIds([]);
+          showSuccess(`${selectedIds.length} transaction${selectedIds.length > 1 ? 's' : ''} deleted successfully`);
+        } catch (err: any) {
+          showError(err.message || 'Failed to delete transactions');
         }
       }
     );
@@ -247,80 +270,92 @@ export function TransactionList() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">Transactions</h1>
-        <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
-          <button className="primary" onClick={() => setShowTransactionMenu(!showTransactionMenu)}>
-            Add Transaction
-          </button>
-          {showTransactionMenu && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                marginTop: '4px',
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '3px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                zIndex: 1000,
-                minWidth: '150px',
-              }}
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {selectedIds.length > 0 && (
+            <button
+              className="danger"
+              onClick={handleBatchDelete}
             >
-              <button
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                onClick={() => handleTransactionTypeSelect('Income')}
-              >
-                Income
-              </button>
-              <button
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  borderTop: '1px solid var(--border-color)',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                onClick={() => handleTransactionTypeSelect('Expense')}
-              >
-                Expense
-              </button>
-              <button
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  borderTop: '1px solid var(--border-color)',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                onClick={() => handleTransactionTypeSelect('Transfer')}
-              >
-                Transfer
-              </button>
-            </div>
+              Delete Selected ({selectedIds.length})
+            </button>
           )}
+
+          <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
+            <button className="primary" onClick={() => setShowTransactionMenu(!showTransactionMenu)}>
+              Add Transaction
+            </button>
+            {showTransactionMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '4px',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '3px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  zIndex: 1000,
+                  minWidth: '150px',
+                }}
+              >
+                <button
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  onClick={() => handleTransactionTypeSelect('Income')}
+                >
+                  Income
+                </button>
+                <button
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderTop: '1px solid var(--border-color)',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  onClick={() => handleTransactionTypeSelect('Expense')}
+                >
+                  Expense
+                </button>
+                <button
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderTop: '1px solid var(--border-color)',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  onClick={() => handleTransactionTypeSelect('Transfer')}
+                >
+                  Transfer
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -350,6 +385,9 @@ export function TransactionList() {
         onRowClick={undefined}
         onDelete={undefined}
         emptyMessage="No transactions found. Create your first transaction to get started."
+        selectable={true}
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
       />
     </div>
   );

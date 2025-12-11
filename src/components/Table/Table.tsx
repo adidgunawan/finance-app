@@ -17,6 +17,9 @@ interface TableProps<T> {
   searchable?: boolean;
   searchPlaceholder?: string;
   emptyMessage?: string;
+  selectable?: boolean;
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
 }
 
 export function Table<T extends { id: string }>({
@@ -28,6 +31,9 @@ export function Table<T extends { id: string }>({
   searchable = false,
   searchPlaceholder = 'Search...',
   emptyMessage = 'No data available',
+  selectable = false,
+  selectedIds = [],
+  onSelectionChange,
 }: TableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -95,6 +101,27 @@ export function Table<T extends { id: string }>({
     }
   };
 
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!onSelectionChange) return;
+    if (e.target.checked) {
+      onSelectionChange(sortedData.map((row) => row.id));
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const handleSelectRow = (id: string) => {
+    if (!onSelectionChange) return;
+    if (selectedIds.includes(id)) {
+      onSelectionChange(selectedIds.filter((selectedId) => selectedId !== id));
+    } else {
+      onSelectionChange([...selectedIds, id]);
+    }
+  };
+
+  const allSelected = sortedData.length > 0 && sortedData.every((row) => selectedIds.includes(row.id));
+  const someSelected = sortedData.some((row) => selectedIds.includes(row.id)) && !allSelected;
+
   return (
     <div>
       {searchable && (
@@ -108,10 +135,22 @@ export function Table<T extends { id: string }>({
           />
         </div>
       )}
-      
+
       <table>
         <thead>
           <tr>
+            {selectable && (
+              <th style={{ width: '40px' }}>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = someSelected;
+                  }}
+                  onChange={handleSelectAll}
+                />
+              </th>
+            )}
             {columns.map((column) => (
               <th
                 key={column.key}
@@ -136,7 +175,7 @@ export function Table<T extends { id: string }>({
         <tbody>
           {sortedData.length === 0 ? (
             <tr>
-              <td colSpan={columns.length + (onDelete ? 1 : 0)} style={{ textAlign: 'center', padding: '32px' }}>
+              <td colSpan={columns.length + (onDelete ? 1 : 0) + (selectable ? 1 : 0)} style={{ textAlign: 'center', padding: '32px' }}>
                 {emptyMessage}
               </td>
             </tr>
@@ -147,6 +186,15 @@ export function Table<T extends { id: string }>({
                 onClick={() => onRowClick && onRowClick(row)}
                 style={{ cursor: onRowClick ? 'pointer' : 'default' }}
               >
+                {selectable && (
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(row.id)}
+                      onChange={() => handleSelectRow(row.id)}
+                    />
+                  </td>
+                )}
                 {columns.map((column) => {
                   const isEditing =
                     editingCell?.rowId === row.id && editingCell?.columnKey === column.key;

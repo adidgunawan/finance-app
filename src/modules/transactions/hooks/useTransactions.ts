@@ -79,12 +79,25 @@ export function useTransactions() {
     }
   };
 
+  const deleteTransactions = async (ids: string[]) => {
+    try {
+      const { error: deleteError } = await supabase.from('transactions').delete().in('id', ids);
+
+      if (deleteError) throw deleteError;
+      await fetchTransactions();
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   return {
     transactions,
     loading,
     error,
     fetchTransaction,
     deleteTransaction,
+    deleteTransactions,
     refresh: fetchTransactions,
   };
 }
