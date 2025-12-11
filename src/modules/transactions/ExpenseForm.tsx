@@ -281,7 +281,7 @@ export function ExpenseForm() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">{isEditing ? 'Edit Expense Transaction' : 'New Expense Transaction'}</h1>
-        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
+        <Button className="desktop-only" onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -338,6 +338,8 @@ export function ExpenseForm() {
               Add Item
             </Button>
           </div>
+
+          {/* Desktop Table View */}
           <div className="line-items-table">
             <table style={{ tableLayout: 'fixed' }}>
               <thead>
@@ -424,6 +426,75 @@ export function ExpenseForm() {
               </tfoot>
             </table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="line-items-mobile">
+            {formData.items.map((item, index) => (
+              <div key={index} className="line-item-card">
+                <div className="line-item-card-header">
+                  <span>Item {index + 1}</span>
+                  {formData.items.length > 1 && (
+                    <Button
+                      type="button"
+                      onClick={() => handleRemoveItem(index)}
+                      disabled={loading}
+                      variant="danger"
+                      size="sm"
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Account</label>
+                  <select
+                    value={item.account_id}
+                    onChange={(e) => handleItemChange(index, 'account_id', e.target.value)}
+                    required
+                    disabled={loading}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">Select account</option>
+                    {accountOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={item.description}
+                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="form-input"
+                    value={item.amount || ''}
+                    onChange={(e) => handleItemChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile Total */}
+          <div className="mobile-total">
+            <span>Total:</span>
+            <span>{formatCurrency(total, 'IDR')}</span>
+          </div>
         </div>
 
         <FileUpload
@@ -434,7 +505,7 @@ export function ExpenseForm() {
 
         {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
 
-        <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
+        <div className="form-actions">
           <Button type="submit" variant="primary" isLoading={loading}>
             {isEditing ? 'Update Transaction' : 'Create Transaction'}
           </Button>

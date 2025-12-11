@@ -15,6 +15,9 @@ export function Reports() {
           gap: '8px',
           marginBottom: '24px',
           borderBottom: '1px solid var(--border-color)',
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          paddingBottom: '1px' // Prevent border cutoff
         }}
       >
         <Link

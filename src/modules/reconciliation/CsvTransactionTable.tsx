@@ -1,16 +1,19 @@
 import type { ParsedCsvRow, MatchStatus } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { HighlightText } from '../../components/Text/HighlightText';
 
 interface CsvTransactionTableProps {
   rows: ParsedCsvRow[];
   matches?: Map<number, MatchStatus>; // Map of row index to match status
   onFindTransaction?: (rowIndex: number, row: ParsedCsvRow) => void;
+  searchTerm?: string;
 }
 
 export function CsvTransactionTable({
   rows,
   matches = new Map(),
   onFindTransaction,
+  searchTerm = '',
 }: CsvTransactionTableProps) {
   const getMatchStatusBadge = (rowIndex: number) => {
     const status = matches.get(rowIndex);
@@ -53,7 +56,7 @@ export function CsvTransactionTable({
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table className="desktop-only" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
             <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Date</th>
@@ -86,10 +89,12 @@ export function CsvTransactionTable({
                   }}
                   title={row.description}
                 >
-                  {row.description}
+                  {searchTerm ? <HighlightText text={row.description} highlight={searchTerm} /> : row.description}
                 </div>
               </td>
-              <td style={{ padding: '12px' }}>{row.branch}</td>
+              <td style={{ padding: '12px' }}>
+                {searchTerm ? <HighlightText text={row.branch} highlight={searchTerm} /> : row.branch}
+              </td>
               <td
                 style={{
                   padding: '12px',
@@ -97,7 +102,7 @@ export function CsvTransactionTable({
                   color: row.type === 'debit' ? 'var(--error)' : 'var(--success)',
                 }}
               >
-                {formatCurrency(row.amount, 'IDR')}
+                {searchTerm ? <HighlightText text={formatCurrency(row.amount, 'IDR')} highlight={searchTerm} /> : formatCurrency(row.amount, 'IDR')}
               </td>
               <td style={{ padding: '12px', textAlign: 'right' }}>
                 {formatCurrency(row.balance, 'IDR')}
@@ -147,6 +152,64 @@ export function CsvTransactionTable({
           ))}
         </tbody>
       </table>
+
+      {/* Mobile Card View */}
+      <div className="mobile-only mobile-list">
+        {rows.map((row, index) => (
+          <div key={index} className="mobile-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontWeight: 600, fontSize: '14px' }}>{formatDate(row.date)}</span>
+              <span
+                style={{
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  backgroundColor: row.type === 'debit' ? '#ffebee' : '#e8f5e9',
+                  color: row.type === 'debit' ? '#c62828' : '#2e7d32',
+                }}
+              >
+                {row.type.toUpperCase()}
+              </span>
+            </div>
+
+            <div style={{ marginBottom: '8px', fontSize: '14px', color: 'var(--text-primary)' }}>
+              {searchTerm ? <HighlightText text={row.description} highlight={searchTerm} /> : row.description}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {searchTerm ? <HighlightText text={row.branch} highlight={searchTerm} /> : row.branch}
+              </span>
+              <span style={{ fontWeight: 600, fontSize: '15px', color: row.type === 'debit' ? 'var(--error)' : 'var(--success)' }}>
+                {searchTerm ? <HighlightText text={formatCurrency(row.amount, 'IDR')} highlight={searchTerm} /> : formatCurrency(row.amount, 'IDR')}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+              <div>
+                {getMatchStatusBadge(index)}
+              </div>
+              {onFindTransaction && (
+                <button
+                  onClick={() => onFindTransaction(index, row)}
+                  style={{
+                    fontSize: '12px',
+                    padding: '4px 10px',
+                    backgroundColor: 'var(--accent)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Find Match
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

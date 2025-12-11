@@ -1,7 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { FiPlus } from 'react-icons/fi';
 import { useTransactions } from './hooks/useTransactions';
+import { useSearch } from '../../contexts/SearchContext';
 import { Table, Column } from '../../components/Table/Table';
+import { HighlightText } from '../../components/Text/HighlightText';
 import { useToast } from '../../contexts/ToastContext';
 import { PageLoader } from '../../components/Layout/PageLoader';
 import type { Transaction } from '../../lib/types';
@@ -11,33 +14,45 @@ export function TransactionList() {
   const { transactions, loading, error, deleteTransaction, deleteTransactions } = useTransactions();
   const { showError, showSuccess, showConfirm } = useToast();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [showTransactionMenu, setShowTransactionMenu] = useState(false);
+  const [showDesktopMenu, setShowDesktopMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu when clicking outside
+  // Close desktop menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowTransactionMenu(false);
+        setShowDesktopMenu(false);
       }
     };
 
-    if (showTransactionMenu) {
+    if (showDesktopMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showTransactionMenu]);
+  }, [showDesktopMenu]);
+
+  // Close mobile menu when clicking outside (optional, or rely on backdrop)
+  useEffect(() => {
+    // Backdrop handles closing
+  }, [showMobileMenu]);
 
   // Clear selection when transactions change or filters change
   useEffect(() => {
     setSelectedIds([]);
   }, [transactions, typeFilter, searchTerm]);
+
+  // Clear search on mount/unmount
+  useEffect(() => {
+    setSearchTerm('');
+    return () => setSearchTerm('');
+  }, [setSearchTerm]);
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
@@ -96,26 +111,7 @@ export function TransactionList() {
     );
   };
 
-  // Function to highlight matching text in search results
-  const highlightText = (text: string, searchTerm: string) => {
-    if (!searchTerm) return text;
 
-    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-    const parts = text.split(regex);
-
-    return parts.map((part, index) => {
-      // Check if this part matches the search term (case-insensitive)
-      if (part.toLowerCase() === searchTerm.toLowerCase()) {
-        return (
-          <span key={index} style={{ backgroundColor: '#ffeb3b', color: 'var(--text-primary)' }}>
-            {part}
-          </span>
-        );
-      }
-      return <span key={index}>{part}</span>;
-    });
-  };
 
   const columns: Column<Transaction>[] = useMemo(() => [
     {
@@ -138,7 +134,7 @@ export function TransactionList() {
             e.currentTarget.style.textDecoration = 'none';
           }}
         >
-          {searchTerm ? highlightText(value, searchTerm) : value}
+          <HighlightText text={value} highlight={searchTerm} />
         </Link>
       ),
     },
@@ -154,7 +150,7 @@ export function TransactionList() {
       label: 'Type',
       width: '100px',
       sortable: true,
-      render: (value) => (searchTerm ? highlightText(value, searchTerm) : value),
+      render: (value) => <HighlightText text={value} highlight={searchTerm} />,
     },
     {
       key: 'contact',
@@ -162,7 +158,7 @@ export function TransactionList() {
       render: (_value, transaction) => {
         const contact = transaction.type === 'Income' ? transaction.payer : transaction.payee;
         const displayValue = contact?.name || '-';
-        return searchTerm && displayValue !== '-' ? highlightText(displayValue, searchTerm) : displayValue;
+        return searchTerm && displayValue !== '-' ? <HighlightText text={displayValue} highlight={searchTerm} /> : displayValue;
       },
     },
     {
@@ -210,7 +206,7 @@ export function TransactionList() {
                 }}
               >
                 {searchTerm && tag.toLowerCase().includes(searchTerm.toLowerCase())
-                  ? highlightText(tag, searchTerm)
+                  ? <HighlightText text={tag} highlight={searchTerm} />
                   : tag}
               </span>
             ))}
@@ -262,8 +258,130 @@ export function TransactionList() {
   }
 
   const handleTransactionTypeSelect = (type: 'Income' | 'Expense' | 'Transfer') => {
-    setShowTransactionMenu(false);
+    setShowDesktopMenu(false);
+    setShowMobileMenu(false);
     navigate(`/transactions/${type.toLowerCase()}/new`);
+  };
+
+  const renderMobileTransactionRow = (transaction: Transaction, index: number, allData: Transaction[]) => {
+    const currentDate = new Date(transaction.date);
+    const prevDate = index > 0 ? new Date(allData[index - 1].date) : null;
+
+    // Check if we need a date header
+    const showHeader = index === 0 ||
+      currentDate.getDate() !== prevDate?.getDate() ||
+      currentDate.getMonth() !== prevDate?.getMonth() ||
+      currentDate.getFullYear() !== prevDate?.getFullYear();
+
+    const dateHeader = currentDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }); // e.g., 28 August
+
+    // Get icon/avatar info
+    let iconChar = '?';
+    let iconColor = 'var(--text-secondary)';
+    let iconBg = 'var(--bg-secondary)';
+
+    if (transaction.type === 'Income') {
+      iconChar = transaction.payer?.name?.charAt(0).toUpperCase() || '?';
+      iconColor = '#1565c0'; // blue
+      iconBg = '#e3f2fd';
+    } else if (transaction.type === 'Expense') {
+      iconChar = transaction.payee?.name?.charAt(0).toUpperCase() || '?';
+      iconColor = '#c62828'; // red
+      iconBg = '#ffebee';
+    } else {
+      iconChar = '⇄';
+      iconColor = 'var(--text-primary)';
+      iconBg = 'var(--bg-secondary)';
+    }
+
+    const title = transaction.type === 'Income'
+      ? transaction.payer?.name || 'Unknown Payer'
+      : transaction.type === 'Expense'
+        ? transaction.payee?.name || 'Unknown Payee'
+        : `Transfer to ${transaction.paid_to_account?.name}`;
+
+    const time = new Date(transaction.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    return (
+      <div style={{ marginBottom: '0' }}>
+        {showHeader && (
+          <div style={{
+            fontSize: '12px',
+            fontWeight: '600',
+            color: 'var(--text-secondary)',
+            marginBottom: '8px',
+            marginTop: index > 0 ? '16px' : '0',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {dateHeader}
+          </div>
+        )}
+
+        <div
+          onClick={() => navigate(`/transactions/${transaction.id}`)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '10px 0',
+            backgroundColor: 'transparent',
+            borderBottom: '1px solid var(--border-color)',
+            cursor: 'pointer',
+            transition: 'background-color 0.15s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          {/* Avatar / Icon */}
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: iconBg,
+            color: iconColor,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: '600',
+            fontSize: '15px',
+            marginRight: '12px',
+            flexShrink: 0
+          }}>
+            {iconChar}
+          </div>
+
+          {/* Middle: Title & Subtitle */}
+          <div style={{ flex: 1, minWidth: 0, marginRight: '12px' }}>
+            <div style={{
+              fontWeight: '600',
+              fontSize: '14px',
+              color: 'var(--text-primary)',
+              marginBottom: '2px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              <HighlightText text={title} highlight={searchTerm} />
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              {time}
+            </div>
+          </div>
+
+          {/* Right: Amount */}
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{
+              fontWeight: '600',
+              fontSize: '14px',
+              color: transaction.type === 'Expense' ? '#c62828' : transaction.type === 'Income' ? '#2e7d32' : 'var(--text-primary)'
+            }}>
+              {transaction.type === 'Expense' ? '-' : '+'}
+              {formatCurrency(transaction.total, 'IDR')}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -281,11 +399,11 @@ export function TransactionList() {
             </button>
           )}
 
-          <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
-            <button className="primary" onClick={() => setShowTransactionMenu(!showTransactionMenu)}>
+          <div className="desktop-only" style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
+            <button className="primary" onClick={() => setShowDesktopMenu(!showDesktopMenu)}>
               Add Transaction
             </button>
-            {showTransactionMenu && (
+            {showDesktopMenu && (
               <div
                 style={{
                   position: 'absolute',
@@ -359,18 +477,11 @@ export function TransactionList() {
         </div>
       </div>
 
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <input
-          type="text"
-          placeholder="Search transactions..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ flex: '1', minWidth: '200px' }}
-        />
+      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          style={{ width: '180px' }}
+          style={{ width: '160px', fontSize: '13px' }}
         >
           <option value="all">All Types</option>
           <option value="Income">Income</option>
@@ -388,7 +499,132 @@ export function TransactionList() {
         selectable={true}
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
+        mobileRenderer={renderMobileTransactionRow}
       />
+
+      {/* Mobile FAB */}
+      <div className="mobile-only">
+        {/* Backdrop for mobile menu */}
+        {showMobileMenu && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              zIndex: 99,
+              backdropFilter: 'blur(2px)'
+            }}
+            onClick={() => setShowMobileMenu(false)}
+          />
+        )}
+        <div style={{
+          position: 'fixed',
+          bottom: '72px',
+          right: '20px',
+          zIndex: 100
+        }}>
+          {showMobileMenu && (
+            <div style={{
+              position: 'absolute',
+              bottom: '100%',
+              right: '0',
+              marginBottom: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              alignItems: 'flex-end',
+              minWidth: '120px'
+            }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTransactionTypeSelect('Transfer');
+                }}
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: 'auto'
+                }}
+              >
+                <span>Transfer</span>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#757575' }}></div>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTransactionTypeSelect('Expense');
+                }}
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: 'auto'
+                }}
+              >
+                <span>Expense</span>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#c62828' }}></div>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTransactionTypeSelect('Income');
+                }}
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: 'auto'
+                }}
+              >
+                <span>Income</span>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1565c0' }}></div>
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent)',
+              color: 'white',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(35, 131, 226, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              cursor: 'pointer'
+            }}
+          >
+            <FiPlus style={{ transform: showMobileMenu ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
+import { FiPlus } from 'react-icons/fi';
+import { useSearch } from '../../contexts/SearchContext';
 import { useBanks, BankWithDetails } from './hooks/useBanks';
 import { useAccounts } from '../chart-of-accounts/hooks/useAccounts';
 import { Table, Column } from '../../components/Table/Table';
+import { HighlightText } from '../../components/Text/HighlightText';
 import { Modal } from '../../components/Modal/Modal';
 import { PageLoader } from '../../components/Layout/PageLoader';
 import { Input } from '../../components/Form/Input';
@@ -24,7 +27,7 @@ export function Banks() {
   } = useBanks();
   const { refresh: refreshAccounts } = useAccounts();
   const { showError, showSuccess, showConfirm } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [showForm, setShowForm] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
@@ -41,6 +44,12 @@ export function Banks() {
     const term = searchTerm.toLowerCase();
     return banks.filter((bank) => bank.name.toLowerCase().includes(term));
   }, [banks, searchTerm]);
+
+  // Clear search on mount/unmount
+  useEffect(() => {
+    setSearchTerm('');
+    return () => setSearchTerm('');
+  }, [setSearchTerm]);
 
   // Load bank details when modal opens
   useEffect(() => {
@@ -195,6 +204,7 @@ export function Banks() {
       key: 'name',
       label: 'Bank Name',
       sortable: true,
+      render: (value) => <HighlightText text={value} highlight={searchTerm} />,
     },
   ];
 
@@ -210,18 +220,14 @@ export function Banks() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">Banks</h1>
-        <button onClick={handleAdd} className="primary">
-          Add Bank
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="primary desktop-only" onClick={handleAdd}>
+            Add Bank
+          </button>
+        </div>
       </div>
 
       <div style={{ marginBottom: '16px' }}>
-        <Input
-          placeholder="Search banks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ maxWidth: '300px' }}
-        />
       </div>
 
       <Table
@@ -266,9 +272,90 @@ export function Banks() {
             ),
           },
         ]}
-        emptyMessage="No banks found"
+        emptyMessage="No banks found. Add your first bank account."
+        mobileRenderer={(bank) => (
+          <div
+            onClick={() => handleViewDetails(bank)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '12px 0',
+              borderBottom: '1px solid var(--border-color)',
+              backgroundColor: 'transparent',
+            }}
+          >
+            {/* Avatar / Icon */}
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '600',
+              fontSize: '16px',
+              marginRight: '12px',
+              flexShrink: 0
+            }}>
+              {bank.name.charAt(0).toUpperCase()}
+            </div>
+
+            {/* Middle: Name */}
+            <div style={{ flex: 1, minWidth: 0, marginRight: '12px' }}>
+              <div style={{
+                fontWeight: '600',
+                fontSize: '15px',
+                color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                <HighlightText text={bank.name} highlight={searchTerm} />
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                Tap to view details
+              </div>
+            </div>
+
+            {/* Right: Chevron or Action */}
+            <div style={{ color: 'var(--text-tertiary)' }}>
+              Details ›
+            </div>
+          </div>
+        )}
       />
 
+      {/* Mobile FAB */}
+      <div className="mobile-only">
+        <div style={{
+          position: 'fixed',
+          bottom: '80px',
+          right: '24px',
+          zIndex: 100
+        }}>
+          <button
+            onClick={handleAdd}
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent)',
+              color: 'white',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(35, 131, 226, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              cursor: 'pointer'
+            }}
+          >
+            <FiPlus />
+          </button>
+        </div>
+      </div>
       {/* Edit/Create Bank Modal */}
       <Modal
         isOpen={showForm}

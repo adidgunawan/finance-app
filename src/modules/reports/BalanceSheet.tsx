@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useBalanceSheet, PeriodType, BalanceSheetData } from './hooks/useBalanceSheet';
+import { useSearch } from '../../contexts/SearchContext';
 import type { AccountType } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 import { PageLoader } from '../../components/Layout/PageLoader';
+import { HighlightText } from '../../components/Text/HighlightText';
 
 interface AccountGroup {
   type: AccountType;
@@ -12,6 +14,7 @@ interface AccountGroup {
 
 export function BalanceSheet() {
   const { accounts, transactions, loading, error, getBalanceSheetData, getPeriodRanges, fetchData } = useBalanceSheet();
+  const { searchTerm, setSearchTerm } = useSearch();
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const [numberOfPeriods, setNumberOfPeriods] = useState<number>(2);
   const [expandedTypes, setExpandedTypes] = useState<Set<AccountType>>(
@@ -45,6 +48,12 @@ export function BalanceSheet() {
     }
   }, [accounts]);
 
+  // Clear search on mount/unmount
+  useEffect(() => {
+    setSearchTerm('');
+    return () => setSearchTerm('');
+  }, [setSearchTerm]);
+
 
   // Get comparison data for all selected periods
   const comparisonData = useMemo(() => {
@@ -58,7 +67,40 @@ export function BalanceSheet() {
   const groupedAccounts = useMemo(() => {
     const typeOrder: AccountType[] = ['Asset', 'Liability', 'Equity', 'Income', 'Expense'];
     const groups: AccountGroup[] = [];
-    const dataToUse = comparisonData.length > 0 ? comparisonData[0].data : [];
+    const rawData = comparisonData.length > 0 ? comparisonData[0].data : [];
+
+    // Filter logic similar to ChartOfAccounts
+    let dataToUse = rawData;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const accountsToInclude = new Set<string>();
+
+      // Find direct matches
+      const directlyMatching = rawData.filter((item) => {
+        return (
+          item.account.name.toLowerCase().includes(term) ||
+          item.account.account_number.toString().includes(term) ||
+          item.account.type.toLowerCase().includes(term)
+        );
+      });
+
+      // Include hierarchy
+      directlyMatching.forEach((item) => {
+        accountsToInclude.add(item.account.id);
+        let currentAccount = item.account;
+        while (currentAccount.parent_id) {
+          const parent = rawData.find((d) => d.account.id === currentAccount.parent_id);
+          if (parent) {
+            accountsToInclude.add(parent.account.id);
+            currentAccount = parent.account;
+          } else {
+            break;
+          }
+        }
+      });
+
+      dataToUse = rawData.filter((item) => accountsToInclude.has(item.account.id));
+    }
 
     typeOrder.forEach((type) => {
       const typeAccounts = dataToUse.filter((item) => item.account.type === type);
@@ -123,7 +165,7 @@ export function BalanceSheet() {
     const indent = level * 24;
     const isParent = level === 0;
 
-    // Calculate children total if expanded (currently unused but kept for future use)
+
     // const childrenTotal = hasChildren && isExpanded
     //   ? children.reduce((sum, child) => {
     //       const childTotal = calculateTotal(getChildAccounts(child.account.id, typeAccounts));
@@ -158,12 +200,20 @@ export function BalanceSheet() {
             )}
             {!hasChildren && <span style={{ marginLeft: '20px' }} />}
             <span style={{ fontWeight: isParent ? '600' : '400' }}>
-              {accountData.account.account_number}
+              <HighlightText text={accountData.account.account_number.toString()} highlight={searchTerm} />
             </span>
           </td>
-          <td>
+          <td
+            style={{
+              position: 'sticky',
+              left: 0,
+              backgroundColor: 'var(--bg-primary)',
+              zIndex: 1, // Ensure it stays on top of scrolled content
+              borderRight: '1px solid var(--border-color)', // Visual separator
+            }}
+          >
             <span style={{ fontWeight: isParent ? '600' : '400' }}>
-              {accountData.account.name}
+              <HighlightText text={accountData.account.name} highlight={searchTerm} />
             </span>
           </td>
           {comparisonPeriods.map((comp, idx) => {
@@ -295,29 +345,31 @@ export function BalanceSheet() {
                   </div>
                 </div>
                 {isTypeExpanded && (
-                  <table style={{ width: '100%' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
-                        <th style={{ textAlign: 'left' }}>Account Name</th>
-                        {comparisonData.map((comp, idx) => (
-                          <th key={idx} style={{ width: '150px', textAlign: 'right' }}>
-                            {comp.period.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {parentAccounts
-                        .sort((a, b) => a.account.account_number - b.account.account_number)
-                        .map((parent) => renderAccountRow(
-                          parent,
-                          0,
-                          group.accounts,
-                          comparisonData
-                        ))}
-                    </tbody>
-                  </table>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', minWidth: '600px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
+                          <th style={{ textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 2, borderRight: '1px solid var(--border-color)' }}>Account Name</th>
+                          {comparisonData.map((comp, idx) => (
+                            <th key={idx} style={{ width: '150px', textAlign: 'right' }}>
+                              {comp.period.label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parentAccounts
+                          .sort((a, b) => a.account.account_number - b.account.account_number)
+                          .map((parent) => renderAccountRow(
+                            parent,
+                            0,
+                            group.accounts,
+                            comparisonData
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             );

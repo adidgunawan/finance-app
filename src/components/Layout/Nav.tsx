@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText, FiRefreshCw, FiCreditCard } from 'react-icons/fi';
+import { useSearch } from '../../contexts/SearchContext';
+import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText, FiRefreshCw, FiCreditCard, FiSearch } from 'react-icons/fi';
 
 const navItems = [
   { path: '/chart-of-accounts', label: 'Chart of Accounts', icon: FiBarChart2 },
@@ -15,8 +16,23 @@ const navItems = [
 export function Nav() {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { searchTerm, setSearchTerm } = useSearch();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -67,187 +83,250 @@ export function Nav() {
   };
 
   return (
-    <nav className="nav">
-      <div
-        style={{
-          marginBottom: '24px',
-          paddingBottom: '16px',
-          borderBottom: '1px solid var(--border-color)',
-        }}
-      >
-        <Link
-          to="/"
+    <>
+      <nav className="nav">
+        <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            textDecoration: 'none',
-            color: 'var(--text-primary)',
+            marginBottom: '24px',
+            paddingBottom: '16px',
+            borderBottom: '1px solid var(--border-color)',
           }}
         >
-          <div
+          <Link
+            to="/"
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              backgroundColor: 'var(--bg-primary)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
-              overflow: 'hidden',
+              gap: '10px',
+              textDecoration: 'none',
+              color: 'var(--text-primary)',
             }}
           >
-            <img
-              src="/logo.png"
-              alt="Jenjun Logo"
+            <div
               style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--bg-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+                overflow: 'hidden',
               }}
-            />
-          </div>
-          <div
+            >
+              <img
+                src="/logo.png"
+                alt="Jenjun Logo"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  letterSpacing: '-0.5px',
+                }}
+              >
+                Jenjun
+              </span>
+              <span
+                style={{
+                  fontSize: '12px',
+                  fontWeight: '400',
+                  color: 'var(--text-secondary)',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Finance App
+              </span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Desktop Search */}
+        <div style={{ marginBottom: '24px', position: 'relative' }}>
+          <FiSearch
             style={{
+              position: 'absolute',
+              left: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-secondary)',
+              fontSize: '14px'
+            }}
+          />
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search... (Cmd+K)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 8px 8px 32px',
+              borderRadius: '20px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-secondary)',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+          />
+        </div>
+
+        <div>
+          {navItems.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+                style={{ display: 'flex', alignItems: 'center' }}
+              >
+                <IconComponent style={{ marginRight: '8px', fontSize: '16px' }} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+        <div
+          style={{
+            marginTop: 'auto',
+            paddingTop: '12px',
+            borderTop: '1px solid var(--border-color)',
+            position: 'relative',
+          }}
+          ref={menuRef}
+        >
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="nav-item"
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '6px 8px',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
               display: 'flex',
-              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            <span
+            <div
               style={{
-                fontSize: '20px',
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
                 fontWeight: '600',
-                letterSpacing: '-0.5px',
+                flexShrink: 0,
               }}
             >
-              Jenjun
-            </span>
-            <span
+              {getUserInitials()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: '500', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.3' }}>
+                {getUserDisplayName()}
+              </div>
+              {user?.email && (
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.2' }}>
+                  {user.email}
+                </div>
+              )}
+            </div>
+          </button>
+          {showUserMenu && (
+            <div
               style={{
-                fontSize: '12px',
-                fontWeight: '400',
-                color: 'var(--text-secondary)',
-                letterSpacing: '0.5px',
+                position: 'absolute',
+                bottom: '100%',
+                left: 0,
+                right: 0,
+                marginBottom: '8px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                zIndex: 1000,
+                overflow: 'hidden',
               }}
             >
-              Finance App
-            </span>
-          </div>
-        </Link>
-      </div>
-      <div>
-        {navItems.map((item) => {
+              <button
+                onClick={handleLogout}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '10px 12px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <FiLogOut style={{ fontSize: '16px' }} />
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      </nav >
+      <div className="bottom-nav">
+        {navItems.filter(item =>
+          ['/transactions', '/contacts', '/banks'].includes(item.path)
+        ).map(item => {
           const IconComponent = item.icon;
+          const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              style={{ display: 'flex', alignItems: 'center' }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                fontSize: '9px',
+                fontWeight: isActive ? '600' : '500',
+                textDecoration: 'none',
+                padding: '4px',
+                minWidth: '60px',
+                transition: 'all 0.2s ease'
+              }}
             >
-              <IconComponent style={{ marginRight: '8px', fontSize: '16px' }} />
-              {item.label}
+              <IconComponent style={{ fontSize: '18px', marginBottom: '3px' }} />
+              <span>{item.label}</span>
             </Link>
-          );
+          )
         })}
       </div>
-      <div
-        style={{
-          marginTop: 'auto',
-          paddingTop: '12px',
-          borderTop: '1px solid var(--border-color)',
-          position: 'relative',
-        }}
-        ref={menuRef}
-      >
-        <button
-          onClick={() => setShowUserMenu(!showUserMenu)}
-          className="nav-item"
-          style={{
-            width: '100%',
-            textAlign: 'left',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '6px 8px',
-            color: 'var(--text-primary)',
-            fontSize: '13px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--accent)',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '10px',
-              fontWeight: '600',
-              flexShrink: 0,
-            }}
-          >
-            {getUserInitials()}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: '500', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.3' }}>
-              {getUserDisplayName()}
-            </div>
-            {user?.email && (
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.2' }}>
-                {user.email}
-              </div>
-            )}
-          </div>
-        </button>
-        {showUserMenu && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '100%',
-              left: 0,
-              right: 0,
-              marginBottom: '8px',
-              background: 'var(--bg-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              zIndex: 1000,
-              overflow: 'hidden',
-            }}
-          >
-            <button
-              onClick={handleLogout}
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '10px 12px',
-                color: 'var(--text-primary)',
-                fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              <FiLogOut style={{ fontSize: '16px' }} />
-              Logout
-            </button>
-          </div>
-        )}
-      </div>
-    </nav>
+    </>
   );
 }
 

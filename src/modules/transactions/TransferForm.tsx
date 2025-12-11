@@ -272,7 +272,7 @@ export function TransferForm() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">{isEditing ? 'Edit Transfer Transaction' : 'New Transfer Transaction'}</h1>
-        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
+        <Button className="desktop-only" onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -341,85 +341,156 @@ export function TransferForm() {
               Add Cost
             </Button>
           </div>
+
           {formData.costs.length > 0 && (
-            <div className="line-items-table">
-              <table style={{ tableLayout: 'fixed' }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: '400px' }}>Account</th>
-                    <th>Description</th>
-                    <th style={{ width: '150px' }}>Amount</th>
-                    <th style={{ width: '80px' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {formData.costs.map((cost, index) => (
-                    <tr key={index}>
-                      <td style={{ width: '400px' }}>
-                        <select
-                          value={cost.account_id}
-                          onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
-                          required
-                          disabled={loading}
-                          style={{
-                            width: '100%',
-                            maxWidth: '400px',
-                            padding: '6px 8px',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '3px',
-                            backgroundColor: 'var(--bg-primary)',
-                            color: 'var(--text-primary)'
-                          }}
-                        >
-                          <option value="">Select account</option>
-                          {costAccountOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={cost.description}
-                          onChange={(e) => handleCostChange(index, 'description', e.target.value)}
-                          disabled={loading}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-input"
-                          value={cost.amount || ''}
-                          onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                          required
-                          disabled={loading}
-                        />
-                      </td>
-                      <td>
-                        <Button
-                          type="button"
-                          onClick={() => handleRemoveCost(index)}
-                          disabled={loading}
-                          variant="danger"
-                          size="sm"
-                          style={{ padding: '4px 8px', fontSize: '12px' }}
-                        >
-                          Remove
-                        </Button>
-                      </td>
+            <>
+              {/* Desktop Table View */}
+              <div className="line-items-table">
+                <table style={{ tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: '400px' }}>Account</th>
+                      <th>Description</th>
+                      <th style={{ width: '150px' }}>Amount</th>
+                      <th style={{ width: '80px' }}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {formData.costs.map((cost, index) => (
+                      <tr key={index}>
+                        <td style={{ width: '400px' }}>
+                          <select
+                            value={cost.account_id}
+                            onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
+                            required
+                            disabled={loading}
+                            style={{
+                              width: '100%',
+                              maxWidth: '400px',
+                              padding: '6px 8px',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '3px',
+                              backgroundColor: 'var(--bg-primary)',
+                              color: 'var(--text-primary)'
+                            }}
+                          >
+                            <option value="">Select account</option>
+                            {costAccountOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={cost.description}
+                            onChange={(e) => handleCostChange(index, 'description', e.target.value)}
+                            disabled={loading}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="form-input"
+                            value={cost.amount || ''}
+                            onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                            required
+                            disabled={loading}
+                          />
+                        </td>
+                        <td>
+                          <Button
+                            type="button"
+                            onClick={() => handleRemoveCost(index)}
+                            disabled={loading}
+                            variant="danger"
+                            size="sm"
+                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                          >
+                            Remove
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="line-items-mobile">
+                {formData.costs.map((cost, index) => (
+                  <div key={index} className="line-item-card">
+                    <div className="line-item-card-header">
+                      <span>Cost {index + 1}</span>
+                      <Button
+                        type="button"
+                        onClick={() => handleRemoveCost(index)}
+                        disabled={loading}
+                        variant="danger"
+                        size="sm"
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Account</label>
+                      <select
+                        value={cost.account_id}
+                        onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
+                        required
+                        disabled={loading}
+                        style={{ width: '100%' }}
+                      >
+                        <option value="">Select account</option>
+                        {costAccountOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Description</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={cost.description}
+                        onChange={(e) => handleCostChange(index, 'description', e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Amount</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="form-input"
+                        value={cost.amount || ''}
+                        onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
-          <div style={{ marginTop: '12px', fontWeight: 600 }}>
+
+          {/* Total Display */}
+          <div style={{ marginTop: '12px', fontWeight: 600 }} className="desktop-only">
             Total: {formatCurrency(total, formData.currency)}
+          </div>
+          <div className="mobile-total">
+            <span>Total:</span>
+            <span>{formatCurrency(total, formData.currency)}</span>
           </div>
         </div>
 
@@ -431,7 +502,7 @@ export function TransferForm() {
 
         {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
 
-        <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
+        <div className="form-actions">
           <Button type="submit" variant="primary" isLoading={loading}>
             {isEditing ? 'Update Transaction' : 'Create Transaction'}
           </Button>

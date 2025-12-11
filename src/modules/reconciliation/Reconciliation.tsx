@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearch } from '../../contexts/SearchContext';
 
 import { useReconciliation } from './hooks/useReconciliation';
 import { useAccounts } from '../chart-of-accounts/hooks/useAccounts';
@@ -17,6 +18,14 @@ export function Reconciliation() {
   const { showError, showSuccess, showConfirm } = useToast();
   const { accounts, loading: accountsLoading } = useAccounts();
   const { contacts } = useContacts();
+  const { searchTerm, setSearchTerm } = useSearch();
+
+  // Clear search on mount/unmount
+  useEffect(() => {
+    setSearchTerm('');
+    return () => setSearchTerm('');
+  }, [setSearchTerm]);
+
   const {
     sessions,
     currentSession,
@@ -393,13 +402,13 @@ export function Reconciliation() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Single Row: Wallet Account, Bank Name, Session, Upload */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1fr',
+          display: 'flex',
+          flexWrap: 'wrap',
           gap: '16px',
           alignItems: 'flex-start'
         }}>
           {/* Wallet Account */}
-          <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
             <label className="form-label">Wallet Account</label>
             <Select
               value={selectedAccountId || ''}
@@ -419,7 +428,7 @@ export function Reconciliation() {
           </div>
 
           {/* Bank Name */}
-          <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
             <label className="form-label">Bank Name</label>
             <Select
               value={bankName || ''}
@@ -432,7 +441,7 @@ export function Reconciliation() {
           </div>
 
           {/* Session Selection */}
-          <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
             <label className="form-label">Session</label>
             {sessions.length > 0 ? (
               <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
@@ -530,7 +539,7 @@ export function Reconciliation() {
           </div>
 
           {/* CSV Upload */}
-          <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
             <label className="form-label">Upload CSV</label>
             {selectedAccountId && bankName ? (
               <div>
@@ -582,9 +591,18 @@ export function Reconciliation() {
                 Account: {csvData.metadata.account_name} ({csvData.metadata.account_number}) - {csvData.metadata.currency}
               </div>
               <CsvTransactionTable
-                rows={csvData.rows}
+                rows={csvData.rows.filter(row => {
+                  if (!searchTerm) return true;
+                  const term = searchTerm.toLowerCase();
+                  return (
+                    row.description.toLowerCase().includes(term) ||
+                    row.amount.toString().includes(term) ||
+                    row.branch.toLowerCase().includes(term)
+                  );
+                })}
                 matches={matches}
                 onFindTransaction={handleFindTransaction}
+                searchTerm={searchTerm}
               />
             </div>
 

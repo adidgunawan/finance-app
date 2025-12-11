@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useAccounts } from './hooks/useAccounts';
+import { useSearch } from '../../contexts/SearchContext';
 import { AccountForm } from './AccountForm';
 import { Modal } from '../../components/Modal/Modal';
 import { PageLoader } from '../../components/Layout/PageLoader';
@@ -7,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
 import type { Account, AccountType } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
+import { HighlightText } from '../../components/Text/HighlightText';
 
 interface AccountGroup {
   type: AccountType;
@@ -19,7 +21,7 @@ export function ChartOfAccounts() {
   const [showForm, setShowForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [expandedTypes, setExpandedTypes] = useState<Set<AccountType>>(
     new Set(['Asset', 'Liability', 'Equity', 'Income', 'Expense'])
   );
@@ -79,6 +81,12 @@ export function ChartOfAccounts() {
 
     checkAccountsWithTransactions();
   }, [accounts]);
+
+  // Clear search on mount/unmount
+  useEffect(() => {
+    setSearchTerm('');
+    return () => setSearchTerm('');
+  }, [setSearchTerm]);
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
@@ -252,26 +260,7 @@ export function ChartOfAccounts() {
     );
   };
 
-  // Function to highlight matching text in search results
-  const highlightText = (text: string, searchTerm: string) => {
-    if (!searchTerm) return text;
 
-    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-    const parts = text.split(regex);
-
-    return parts.map((part, index) => {
-      // Check if this part matches the search term (case-insensitive)
-      if (part.toLowerCase() === searchTerm.toLowerCase()) {
-        return (
-          <span key={index} style={{ backgroundColor: '#ffeb3b', color: 'var(--text-primary)' }}>
-            {part}
-          </span>
-        );
-      }
-      return <span key={index}>{part}</span>;
-    });
-  };
 
   const renderAccountRow = (account: Account, level: number = 0, typeAccounts: Account[]) => {
     const children = getChildAccounts(account.id, typeAccounts);
@@ -308,12 +297,12 @@ export function ChartOfAccounts() {
             )}
             {!hasChildren && <span style={{ marginLeft: '20px' }} />}
             <span style={{ fontWeight: isParent ? '600' : '400' }}>
-              {searchTerm ? highlightText(account.account_number.toString(), searchTerm) : account.account_number}
+              <HighlightText text={account.account_number.toString()} highlight={searchTerm} />
             </span>
           </td>
           <td>
             <span style={{ fontWeight: isParent ? '600' : '400' }}>
-              {searchTerm ? highlightText(account.name, searchTerm) : account.name}
+              <HighlightText text={account.name} highlight={searchTerm} />
             </span>
           </td>
           <td style={{ textAlign: 'right', fontWeight: isParent ? '600' : '400' }}>
@@ -358,6 +347,116 @@ export function ChartOfAccounts() {
     );
   };
 
+  const renderMobileAccountRow = (account: Account, level: number = 0, typeAccounts: Account[]) => {
+    const children = getChildAccounts(account.id, typeAccounts);
+    const hasChildren = children.length > 0;
+    const isExpanded = expandedParents.has(account.id);
+    const hasLinkedTransactions = accountsWithTransactions.has(account.id);
+    const indent = level * 16;
+    const isParent = level === 0;
+
+    return (
+      <Fragment key={account.id}>
+        <div
+          onClick={() => hasChildren && toggleParentExpanded(account.id)}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 0',
+            borderBottom: '1px solid var(--border-color)',
+            backgroundColor: 'var(--bg-primary)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', flex: 1, paddingLeft: `${indent}px` }}>
+            {/* Expand Icon - smaller footprint */}
+            <div
+              style={{
+                width: '24px',
+                display: 'flex',
+                justifyContent: 'center',
+                marginRight: '4px',
+                visibility: hasChildren ? 'visible' : 'hidden'
+              }}
+            >
+              <div style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '14px' }}>
+                {isExpanded ? '−' : '+'}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                fontWeight: isParent ? '600' : '400',
+                fontSize: '15px',
+                color: 'var(--text-primary)',
+                marginBottom: '2px'
+              }}>
+                <HighlightText text={account.name} highlight={searchTerm} />
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <HighlightText text={account.account_number.toString()} highlight={searchTerm} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: '12px' }}>
+            <div style={{ fontWeight: isParent ? '500' : '400', fontSize: '14px', marginBottom: '4px' }}>
+              {account.balance !== undefined ? formatCurrency(account.balance, 'IDR') : '-'}
+            </div>
+
+            {/* Compact Actions - Icon only or minimal text */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(account);
+                }}
+                style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  height: 'auto',
+                  border: '1px solid var(--border-color)',
+                  background: 'transparent'
+                }}
+              >
+                Edit
+              </button>
+              {/* Only show delete if no link, to save space, or show disabled state subtly */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(account);
+                }}
+                disabled={hasLinkedTransactions}
+                style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  height: 'auto',
+                  border: '1px solid var(--border-color)',
+                  color: hasLinkedTransactions ? 'var(--text-tertiary)' : 'var(--error)',
+                  background: 'transparent',
+                  borderColor: hasLinkedTransactions ? 'var(--border-color)' : 'var(--error-light, #ffdcd9)' // subtle red border or default
+                }}
+              >
+                Del
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {
+          hasChildren && isExpanded && (
+            <>
+              {children
+                .sort((a, b) => a.account_number - b.account_number)
+                .map((child) => renderMobileAccountRow(child, level + 1, typeAccounts))}
+            </>
+          )
+        }
+      </Fragment >
+    );
+  };
+
   if (loading) {
     return <PageLoader />;
   }
@@ -371,106 +470,113 @@ export function ChartOfAccounts() {
         </button>
       </div>
 
-      <div style={{ marginBottom: '16px' }}>
-        <input
-          type="text"
-          placeholder="Search accounts..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ maxWidth: '100%', width: '100%' }}
-        />
-      </div>
-      {groupedAccounts.length === 0 ? (
-        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          No accounts found. Create your first account to get started.
-        </div>
-      ) : (
-        <div>
-          {groupedAccounts.map((group) => {
-            const parentAccounts = getParentAccounts(group.accounts);
-            const isTypeExpanded = expandedTypes.has(group.type);
+      {
+        groupedAccounts.length === 0 ? (
+          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            No accounts found. Create your first account to get started.
+          </div>
+        ) : (
+          <div>
+            {groupedAccounts.map((group) => {
+              const parentAccounts = getParentAccounts(group.accounts);
+              const isTypeExpanded = expandedTypes.has(group.type);
 
-            return (
-              <div key={group.type} style={{ marginBottom: '24px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: 'var(--bg-secondary)',
-                    borderBottom: '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
-                  onClick={() => toggleTypeExpanded(group.type)}
-                >
-                  <button
+              return (
+                <div key={group.type} style={{ marginBottom: '24px' }}>
+                  <div
                     style={{
-                      background: 'none',
-                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px',
+                      background: 'var(--bg-secondary)',
+                      borderBottom: '1px solid var(--border-color)',
                       cursor: 'pointer',
-                      padding: '0 4px',
-                      marginRight: '8px',
-                      fontSize: '14px',
+                      fontWeight: 600,
                     }}
+                    onClick={() => toggleTypeExpanded(group.type)}
                   >
-                    {isTypeExpanded ? '−' : '+'}
-                  </button>
-                  <span>{group.type}</span>
+                    <button
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '0 4px',
+                        marginRight: '8px',
+                        fontSize: '14px',
+                      }}
+                    >
+                      {isTypeExpanded ? '−' : '+'}
+                    </button>
+                    <span>{group.type}</span>
+                  </div>
+                  {isTypeExpanded && (
+                    <>
+                      <div className="desktop-only">
+                        <table style={{ width: '100%' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
+                              <th style={{ textAlign: 'left' }}>Account Name</th>
+                              <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
+                              <th style={{ width: '150px' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {parentAccounts
+                              .sort((a, b) => a.account_number - b.account_number)
+                              .map((parent) => renderAccountRow(parent, 0, group.accounts))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="mobile-only mobile-list" style={{ marginTop: '12px' }}>
+                        {parentAccounts
+                          .sort((a, b) => a.account_number - b.account_number)
+                          .map((parent) => renderMobileAccountRow(parent, 0, group.accounts))}
+                      </div>
+                    </>
+                  )}
                 </div>
-                {isTypeExpanded && (
-                  <table style={{ width: '100%' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
-                        <th style={{ textAlign: 'left' }}>Account Name</th>
-                        <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
-                        <th style={{ width: '150px' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {parentAccounts
-                        .sort((a, b) => a.account_number - b.account_number)
-                        .map((parent) => renderAccountRow(parent, 0, group.accounts))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )
+      }
 
-      {showForm && (
-        <Modal
-          isOpen={showForm}
-          onClose={handleFormCancel}
-          title="Add Account"
-        >
-          <AccountForm
-            account={undefined}
-            accounts={accounts}
-            onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-          />
-        </Modal>
-      )}
+      {
+        showForm && (
+          <Modal
+            isOpen={showForm}
+            onClose={handleFormCancel}
+            title="Add Account"
+          >
+            <AccountForm
+              account={undefined}
+              accounts={accounts}
+              onSubmit={handleFormSubmit}
+              onCancel={handleFormCancel}
+            />
+          </Modal>
+        )
+      }
 
-      {showEditModal && editingAccount && (
-        <Modal
-          isOpen={showEditModal}
-          onClose={handleFormCancel}
-          title="Edit Account"
-        >
-          <AccountForm
-            account={editingAccount}
-            accounts={accounts}
-            onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-          />
-        </Modal>
-      )}
-    </div>
+      {
+        showEditModal && editingAccount && (
+          <Modal
+            isOpen={showEditModal}
+            onClose={handleFormCancel}
+            title="Edit Account"
+          >
+            <AccountForm
+              account={editingAccount}
+              accounts={accounts}
+              onSubmit={handleFormSubmit}
+              onCancel={handleFormCancel}
+            />
+          </Modal>
+        )
+      }
+    </div >
   );
 }
 
