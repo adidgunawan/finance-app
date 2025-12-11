@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { useReconciliation } from './hooks/useReconciliation';
 import { useAccounts } from '../chart-of-accounts/hooks/useAccounts';
 import { useContacts } from '../contacts/hooks/useContacts';
@@ -7,12 +7,13 @@ import { parseBCACsv } from '../../lib/utils/csvParser';
 import { CsvTransactionTable } from './CsvTransactionTable';
 import { TransactionMatchModal } from './TransactionMatchModal';
 import { FileUpload } from '../../components/Form/FileUpload';
+import { PageLoader } from '../../components/Layout/PageLoader';
 import { Select } from '../../components/Form/Select';
 import { useToast } from '../../contexts/ToastContext';
 import type { ParsedCsvRow, ReconciliationCsvData, MatchStatus } from '../../lib/types';
 
 export function Reconciliation() {
-  const navigate = useNavigate();
+
   const { showError, showSuccess, showConfirm } = useToast();
   const { accounts, loading: accountsLoading } = useAccounts();
   const { contacts } = useContacts();
@@ -44,12 +45,12 @@ export function Reconciliation() {
   const isManuallyLoadingSession = useRef(false);
 
   const walletAccounts = accounts.filter((a) => a.is_wallet === true);
-  
+
   // Get selected account and bank name from it
   const selectedAccount = useMemo(() => {
     return selectedAccountId ? accounts.find((a) => a.id === selectedAccountId) : null;
   }, [selectedAccountId, accounts]);
-  
+
   const bankName = selectedAccount?.bank?.name || '';
 
   // Load matches for a session
@@ -68,7 +69,7 @@ export function Reconciliation() {
     if (isManuallyLoadingSession.current) {
       return;
     }
-    
+
     // Only sync if we don't already have csvData set (to avoid overwriting during manual load)
     if (currentSession && currentSession.csv_data && !csvData) {
       setCsvData(currentSession.csv_data);
@@ -96,7 +97,7 @@ export function Reconciliation() {
       if (accountSession) {
         const session = await loadSession(accountSession.id);
         if (cancelled) return;
-        
+
         if (session && session.csv_data) {
           setCsvData(session.csv_data);
           loadMatchesForSession(session.id);
@@ -116,7 +117,7 @@ export function Reconciliation() {
   // Handle CSV file upload
   const handleFileUpload = async (files: File[]) => {
     console.log('handleFileUpload called with files:', files);
-    
+
     if (files.length === 0) {
       // User removed the file - clear the data
       console.log('No files, clearing data');
@@ -127,31 +128,31 @@ export function Reconciliation() {
 
     const file = files[0];
     console.log('Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
-    
+
     // Validate file extension (case-insensitive)
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     console.log('File extension:', fileExtension);
-    
+
     if (!fileExtension || fileExtension !== 'csv') {
-      const errorMsg = fileExtension 
-        ? `Invalid file type. Please upload a CSV file. Got: .${fileExtension}` 
+      const errorMsg = fileExtension
+        ? `Invalid file type.Please upload a CSV file.Got: .${fileExtension} `
         : 'Invalid file. File must have a .csv extension.';
       console.error('File validation failed:', errorMsg);
       showError(errorMsg);
       setCsvFile(null);
       return;
     }
-    
+
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      const errorMsg = `File is too large. Maximum size is 10MB. Got: ${(file.size / 1024 / 1024).toFixed(2)}MB`;
+      const errorMsg = `File is too large.Maximum size is 10MB.Got: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
       console.error('File size validation failed:', errorMsg);
       showError(errorMsg);
       setCsvFile(null);
       return;
     }
-    
+
     // Check if file is empty
     if (file.size === 0) {
       console.error('File is empty');
@@ -173,7 +174,7 @@ export function Reconciliation() {
       setCsvFile(null);
       return;
     }
-    
+
     console.log('All validations passed, starting to parse CSV...');
 
     try {
@@ -194,7 +195,7 @@ export function Reconciliation() {
       // Try to save to database, but don't fail if tables don't exist
       try {
         let sessionToUse = currentSession || sessions.find((s) => s.account_id === selectedAccountId);
-        
+
         if (sessionToUse) {
           const updatedSession = await updateSession(sessionToUse.id, {
             csv_data: parsedData,
@@ -312,14 +313,14 @@ export function Reconciliation() {
         try {
           setIsProcessing(true);
           await deleteSession(sessionId);
-          
+
           // Clear data if we deleted the current session
           if (currentSession?.id === sessionId) {
             setCsvData(null);
             setMatches(new Map());
             setCsvFile(null);
           }
-          
+
           showSuccess('Session deleted successfully');
         } catch (err: any) {
           showError(err.message || 'Failed to delete session');
@@ -335,25 +336,25 @@ export function Reconciliation() {
     try {
       isManuallyLoadingSession.current = true;
       setIsProcessing(true);
-      
+
       // Find session from existing sessions to get quick data without loading
       const existingSession = sessions.find((s) => s.id === sessionId);
       if (existingSession) {
         // Set account ID (bank name will come from account.bank)
         setSelectedAccountId(existingSession.account_id);
       }
-      
+
       // Load full session data (with CSV) and matches in parallel
       const [session, matchesData] = await Promise.all([
         loadSession(sessionId),
         loadMatches(sessionId)
       ]);
-      
+
       if (session) {
         // Batch all CSV data updates together
         if (session.csv_data) {
           setCsvData(session.csv_data);
-          
+
           const matchMap = new Map<number, MatchStatus>();
           matchesData.forEach((match) => {
             matchMap.set(match.csv_row_index, match.match_status);
@@ -380,7 +381,7 @@ export function Reconciliation() {
   };
 
   if (accountsLoading || reconciliationLoading) {
-    return <div>Loading...</div>;
+    return <PageLoader />;
   }
 
   return (
@@ -391,9 +392,9 @@ export function Reconciliation() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Single Row: Wallet Account, Bank Name, Session, Upload */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr 1fr 1fr', 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
           gap: '16px',
           alignItems: 'flex-start'
         }}>
@@ -411,7 +412,7 @@ export function Reconciliation() {
                 { value: '', label: 'Select...' },
                 ...walletAccounts.map((acc) => ({
                   value: acc.id,
-                  label: `${acc.account_number} - ${acc.name}`,
+                  label: `${acc.account_number} - ${acc.name} `,
                 })),
               ]}
             />
@@ -422,7 +423,7 @@ export function Reconciliation() {
             <label className="form-label">Bank Name</label>
             <Select
               value={bankName || ''}
-              onChange={() => {}}
+              onChange={() => { }}
               disabled={true}
               options={[
                 { value: bankName || '', label: bankName || 'No bank set - configure in Chart of Accounts' },
@@ -521,7 +522,7 @@ export function Reconciliation() {
             ) : (
               <Select
                 value=""
-                onChange={() => {}}
+                onChange={() => { }}
                 disabled={true}
                 options={[{ value: '', label: 'No sessions' }]}
               />
@@ -551,11 +552,11 @@ export function Reconciliation() {
                 )}
               </div>
             ) : (
-              <button 
+              <button
                 type="button"
-                disabled 
-                style={{ 
-                  opacity: 0.5, 
+                disabled
+                style={{
+                  opacity: 0.5,
                   cursor: 'not-allowed',
                   padding: '6px 12px',
                   border: '1px solid var(--border-color)',
@@ -620,7 +621,7 @@ export function Reconciliation() {
         csvRow={selectedRow}
         matches={matchResults}
         onLinkTransaction={handleLinkTransaction}
-        onCreateNewTransaction={() => {}}
+        onCreateNewTransaction={() => { }}
         walletAccount={walletAccount}
         accounts={accounts}
         contacts={contacts}

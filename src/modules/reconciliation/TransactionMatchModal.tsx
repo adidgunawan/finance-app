@@ -30,7 +30,7 @@ export function TransactionMatchModal({
   csvRow,
   matches,
   onLinkTransaction,
-  onCreateNewTransaction,
+
   walletAccount,
   accounts,
   contacts,
@@ -43,7 +43,7 @@ export function TransactionMatchModal({
   const [transactionType, setTransactionType] = useState<'Expense' | 'Income' | 'Transfer'>('Expense');
   const [showAddContactModal, setShowAddContactModal] = useState(false);
   const [contactsList, setContactsList] = useState<Contact[]>(contacts);
-  
+
   // Expense form state
   const [expenseFormData, setExpenseFormData] = useState<ExpenseFormData>({
     transaction_date: '',
@@ -53,7 +53,7 @@ export function TransactionMatchModal({
     items: [{ account_id: '', description: '', amount: 0 }],
     attachments: [],
   });
-  
+
   // Income form state
   const [incomeFormData, setIncomeFormData] = useState<IncomeFormData>({
     transaction_date: '',
@@ -90,11 +90,11 @@ export function TransactionMatchModal({
       const date = csvRow.date;
       const description = csvRow.description;
       const amount = csvRow.amount;
-      
+
       // Set default type based on CSV type
       const defaultType = csvRow.type === 'debit' ? 'Expense' : 'Income';
       setTransactionType(defaultType);
-      
+
       // Initialize all forms with CSV data
       setExpenseFormData({
         transaction_date: date,
@@ -104,7 +104,7 @@ export function TransactionMatchModal({
         items: [{ account_id: '', description: description, amount: amount }],
         attachments: [],
       });
-      
+
       setIncomeFormData({
         transaction_date: date,
         tags: [],
@@ -124,7 +124,7 @@ export function TransactionMatchModal({
         costs: [],
         attachments: [],
       });
-      
+
       // Generate transaction number
       generateTransactionNumber(defaultType, new Date(date))
         .then(num => setTransactionNumber(num))
@@ -228,7 +228,7 @@ export function TransactionMatchModal({
 
     try {
       const total = expenseFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
-      
+
       // Create transaction
       const { data: newTransaction, error: txnError } = await supabase
         .from('transactions')
@@ -291,7 +291,7 @@ export function TransactionMatchModal({
 
     try {
       const total = incomeFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
-      
+
       // Create transaction
       const { data: newTransaction, error: txnError } = await supabase
         .from('transactions')
@@ -341,7 +341,7 @@ export function TransactionMatchModal({
     if (confidence >= 50) return '#ff9800'; // Orange
     return '#f44336'; // Red
   };
-  
+
   const expenseAccountOptions = accounts
     .filter((a) => a.type === 'Expense')
     .map((a) => ({ value: a.id, label: `${a.account_number} - ${a.name}` }));
@@ -352,17 +352,17 @@ export function TransactionMatchModal({
     ...contactsList.map((c) => ({ value: c.id, label: c.name })),
     { value: '__add_new__', label: 'Add New...' },
   ];
-  
+
   const expenseTotal = expenseFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
   const incomeTotal = incomeFormData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
-  
+
   // Amount matching validation
   const csvAmount = csvRow?.amount || 0;
   const checkAmountMatch = (transactionTotal: number) => {
     const tolerance = 0.01; // Allow small floating point differences
     return Math.abs(transactionTotal - csvAmount) <= tolerance;
   };
-  
+
   const getAmountDiscrepancy = (transactionTotal: number) => {
     return transactionTotal - csvAmount;
   };
@@ -429,7 +429,7 @@ export function TransactionMatchModal({
 
     try {
       const total = transferFormData.amount + (transferFormData.costs.reduce((sum, cost) => sum + (cost.amount || 0), 0));
-      
+
       // Create transaction
       const { data: newTransaction, error: txnError } = await supabase
         .from('transactions')
@@ -498,7 +498,7 @@ export function TransactionMatchModal({
   const cashAccountOptions = accounts
     .filter((a) => a.is_wallet === true)
     .map((a) => ({ value: a.id, label: `${a.account_number} - ${a.name}` }));
-  
+
   const costAccountOptions = accounts.map((a) => ({
     value: a.id,
     label: `${a.account_number} - ${a.name}`,
@@ -507,9 +507,9 @@ export function TransactionMatchModal({
   const transferTotal = transferFormData.amount + transferFormData.costs.reduce((sum, cost) => sum + (cost.amount || 0), 0);
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       title={showForm ? `Create New ${transactionType} Transaction` : 'Find Matching Transaction'}
       maxWidth="1000px"
     >
@@ -832,9 +832,9 @@ export function TransactionMatchModal({
                           {checkAmountMatch(expenseTotal) ? (
                             <tr>
                               <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
-                                <div style={{ 
-                                  color: '#4caf50', 
-                                  fontSize: '13px', 
+                                <div style={{
+                                  color: '#4caf50',
+                                  fontSize: '13px',
                                   fontWeight: '500',
                                   textAlign: 'center',
                                   padding: '8px',
@@ -848,16 +848,16 @@ export function TransactionMatchModal({
                           ) : (
                             <tr>
                               <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
-                                <div style={{ 
-                                  color: '#f44336', 
-                                  fontSize: '13px', 
+                                <div style={{
+                                  color: '#f44336',
+                                  fontSize: '13px',
                                   fontWeight: '500',
                                   textAlign: 'center',
                                   padding: '8px',
                                   backgroundColor: '#ffebee',
                                   borderRadius: '4px'
                                 }}>
-                                  Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} | 
+                                  Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} |
                                   Discrepancy: {formatCurrency(getAmountDiscrepancy(expenseTotal), 'IDR')}
                                 </div>
                               </td>
@@ -1007,9 +1007,9 @@ export function TransactionMatchModal({
                           {checkAmountMatch(incomeTotal) ? (
                             <tr>
                               <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
-                                <div style={{ 
-                                  color: '#4caf50', 
-                                  fontSize: '13px', 
+                                <div style={{
+                                  color: '#4caf50',
+                                  fontSize: '13px',
                                   fontWeight: '500',
                                   textAlign: 'center',
                                   padding: '8px',
@@ -1023,16 +1023,16 @@ export function TransactionMatchModal({
                           ) : (
                             <tr>
                               <td colSpan={4} style={{ paddingTop: '8px', paddingBottom: '0' }}>
-                                <div style={{ 
-                                  color: '#f44336', 
-                                  fontSize: '13px', 
+                                <div style={{
+                                  color: '#f44336',
+                                  fontSize: '13px',
                                   fontWeight: '500',
                                   textAlign: 'center',
                                   padding: '8px',
                                   backgroundColor: '#ffebee',
                                   borderRadius: '4px'
                                 }}>
-                                  Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} | 
+                                  Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} |
                                   Discrepancy: {formatCurrency(getAmountDiscrepancy(incomeTotal), 'IDR')}
                                 </div>
                               </td>
@@ -1191,9 +1191,9 @@ export function TransactionMatchModal({
                         Total: {formatCurrency(transferTotal, transferFormData.currency)}
                       </div>
                       {checkAmountMatch(transferTotal) ? (
-                        <div style={{ 
-                          color: '#4caf50', 
-                          fontSize: '13px', 
+                        <div style={{
+                          color: '#4caf50',
+                          fontSize: '13px',
                           fontWeight: '500',
                           padding: '8px',
                           backgroundColor: '#e8f5e9',
@@ -1202,15 +1202,15 @@ export function TransactionMatchModal({
                           ✓ Amount matches CSV: {formatCurrency(csvAmount, 'IDR')}
                         </div>
                       ) : (
-                        <div style={{ 
-                          color: '#f44336', 
-                          fontSize: '13px', 
+                        <div style={{
+                          color: '#f44336',
+                          fontSize: '13px',
                           fontWeight: '500',
                           padding: '8px',
                           backgroundColor: '#ffebee',
                           borderRadius: '4px'
                         }}>
-                          Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} | 
+                          Amount mismatch! CSV Amount: {formatCurrency(csvAmount, 'IDR')} |
                           Discrepancy: {formatCurrency(getAmountDiscrepancy(transferTotal), 'IDR')}
                         </div>
                       )}

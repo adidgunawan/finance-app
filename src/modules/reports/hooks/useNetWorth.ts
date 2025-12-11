@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { Account, Transaction } from '../../../lib/types';
 import { calculateAccountBalance } from '../../../lib/utils';
@@ -19,7 +19,7 @@ export function useNetWorth() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch accounts
       const { data: accountsData, error: accountsError } = await supabase
         .from('accounts')
@@ -60,7 +60,7 @@ export function useNetWorth() {
         const weekStart = new Date(referenceDate);
         weekStart.setDate(referenceDate.getDate() - (i * 7) - (referenceDate.getDay() || 7) + 1);
         weekStart.setHours(0, 0, 0, 0);
-        
+
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
         weekEnd.setHours(23, 59, 59, 999);

@@ -10,6 +10,7 @@ import { Input } from '../../components/Form/Input';
 import { useToast } from '../../contexts/ToastContext';
 import type { TransferFormData, Account } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
+import { Button } from '../../components/Button/Button';
 
 export function TransferForm() {
   const navigate = useNavigate();
@@ -271,7 +272,7 @@ export function TransferForm() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">{isEditing ? 'Edit Transfer Transaction' : 'New Transfer Transaction'}</h1>
-        <button onClick={() => navigate('/transactions')}>Cancel</button>
+        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -336,9 +337,9 @@ export function TransferForm() {
         <div style={{ marginTop: '24px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3>Optional Costs</h3>
-            <button type="button" onClick={handleAddCost} disabled={loading}>
+            <Button type="button" onClick={handleAddCost} disabled={loading} variant="secondary">
               Add Cost
-            </button>
+            </Button>
           </div>
           {formData.costs.length > 0 && (
             <div className="line-items-table">
@@ -351,59 +352,69 @@ export function TransferForm() {
                     <th style={{ width: '80px' }}>Actions</th>
                   </tr>
                 </thead>
-              <tbody>
-                {formData.costs.map((cost, index) => (
-                  <tr key={index}>
-                    <td style={{ width: '400px' }}>
-                      <select
-                        value={cost.account_id}
-                        onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
-                        required
-                        disabled={loading}
-                        style={{ width: '100%', maxWidth: '400px' }}
-                      >
-                        <option value="">Select account</option>
-                        {costAccountOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        value={cost.description}
-                        onChange={(e) => handleCostChange(index, 'description', e.target.value)}
-                        disabled={loading}
-                        style={{ width: '100%' }}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={cost.amount || ''}
-                        onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                        required
-                        disabled={loading}
-                        style={{ width: '100%' }}
-                      />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCost(index)}
-                        disabled={loading}
-                        style={{ fontSize: '12px', padding: '4px 8px' }}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                <tbody>
+                  {formData.costs.map((cost, index) => (
+                    <tr key={index}>
+                      <td style={{ width: '400px' }}>
+                        <select
+                          value={cost.account_id}
+                          onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
+                          required
+                          disabled={loading}
+                          style={{
+                            width: '100%',
+                            maxWidth: '400px',
+                            padding: '6px 8px',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '3px',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: 'var(--text-primary)'
+                          }}
+                        >
+                          <option value="">Select account</option>
+                          {costAccountOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={cost.description}
+                          onChange={(e) => handleCostChange(index, 'description', e.target.value)}
+                          disabled={loading}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="form-input"
+                          value={cost.amount || ''}
+                          onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                          required
+                          disabled={loading}
+                        />
+                      </td>
+                      <td>
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveCost(index)}
+                          disabled={loading}
+                          variant="danger"
+                          size="sm"
+                          style={{ padding: '4px 8px', fontSize: '12px' }}
+                        >
+                          Remove
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           )}
@@ -421,12 +432,12 @@ export function TransferForm() {
         {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
-          <button type="submit" className="primary" disabled={loading}>
+          <Button type="submit" variant="primary" isLoading={loading}>
             {isEditing ? 'Update Transaction' : 'Create Transaction'}
-          </button>
-          <button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
+          </Button>
+          <Button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

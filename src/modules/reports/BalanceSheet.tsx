@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
-import { useBalanceSheet, PeriodType, BalanceSheetData, PeriodRange } from './hooks/useBalanceSheet';
+import { useBalanceSheet, PeriodType, BalanceSheetData } from './hooks/useBalanceSheet';
 import type { AccountType } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
+import { PageLoader } from '../../components/Layout/PageLoader';
 
 interface AccountGroup {
   type: AccountType;
@@ -192,7 +193,7 @@ export function BalanceSheet() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <PageLoader />;
   }
 
   if (error) {

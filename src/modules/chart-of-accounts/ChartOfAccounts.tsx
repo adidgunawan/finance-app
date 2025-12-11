@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useAccounts } from './hooks/useAccounts';
 import { AccountForm } from './AccountForm';
 import { Modal } from '../../components/Modal/Modal';
+import { PageLoader } from '../../components/Layout/PageLoader';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
 import type { Account, AccountType } from '../../lib/types';
@@ -83,7 +84,7 @@ export function ChartOfAccounts() {
     if (!searchTerm) return accounts;
     const term = searchTerm.toLowerCase();
     const accountsToInclude = new Set<string>();
-    
+
     // Find all accounts that directly match the search term
     const directlyMatchingAccounts = accounts.filter((acc) => {
       return (
@@ -92,11 +93,11 @@ export function ChartOfAccounts() {
         acc.type.toLowerCase().includes(term)
       );
     });
-    
+
     // For each matching account, include it and its parent hierarchy only
     directlyMatchingAccounts.forEach((acc) => {
       accountsToInclude.add(acc.id);
-      
+
       // Include all ancestors (parents, grandparents, etc.) so we can see the hierarchy
       let currentAccount = acc;
       while (currentAccount.parent_id) {
@@ -109,7 +110,7 @@ export function ChartOfAccounts() {
         }
       }
     });
-    
+
     // Only return accounts that match or are in the parent hierarchy of matches
     return accounts.filter((acc) => accountsToInclude.has(acc.id));
   }, [accounts, searchTerm]);
@@ -155,7 +156,7 @@ export function ChartOfAccounts() {
   useEffect(() => {
     if (searchTerm && filteredAccounts.length > 0) {
       const accountsToExpand = new Set<string>();
-      
+
       // Find all parent accounts that have matching children
       filteredAccounts.forEach((acc) => {
         if (acc.parent_id) {
@@ -167,7 +168,7 @@ export function ChartOfAccounts() {
           accountsToExpand.add(acc.id);
         }
       });
-      
+
       // Expand all necessary parents
       setExpandedParents((prev) => {
         const newExpanded = new Set(prev);
@@ -208,9 +209,9 @@ export function ChartOfAccounts() {
     setShowEditModal(true);
   };
 
-  const handleFormSubmit = async (data: { 
-    name: string; 
-    type: Account['type']; 
+  const handleFormSubmit = async (data: {
+    name: string;
+    type: Account['type'];
     parent_id: string | null;
     initial_balance?: number;
     initial_balance_date?: string | null;
@@ -254,11 +255,11 @@ export function ChartOfAccounts() {
   // Function to highlight matching text in search results
   const highlightText = (text: string, searchTerm: string) => {
     if (!searchTerm) return text;
-    
+
     const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedTerm})`, 'gi');
     const parts = text.split(regex);
-    
+
     return parts.map((part, index) => {
       // Check if this part matches the search term (case-insensitive)
       if (part.toLowerCase() === searchTerm.toLowerCase()) {
@@ -358,7 +359,7 @@ export function ChartOfAccounts() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <PageLoader />;
   }
 
   return (

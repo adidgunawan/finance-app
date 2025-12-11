@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Modal } from './Modal';
 import { ContactForm } from '../../modules/contacts/ContactForm';
 import { supabase } from '../../lib/supabase';

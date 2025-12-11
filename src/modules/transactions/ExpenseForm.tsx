@@ -11,6 +11,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { ContactQuickAddModal } from '../../components/Modal/ContactQuickAddModal';
 import type { ExpenseFormData, Account, Contact } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
+import { Button } from '../../components/Button/Button';
 
 export function ExpenseForm() {
   const navigate = useNavigate();
@@ -271,7 +272,7 @@ export function ExpenseForm() {
     // Refresh contacts list
     const { data: contactsRes } = await supabase.from('contacts').select('*').order('name');
     if (contactsRes) setContacts(contactsRes);
-    
+
     // Auto-select the newly created contact
     setFormData({ ...formData, payee_id: newContact.id });
   };
@@ -280,7 +281,7 @@ export function ExpenseForm() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">{isEditing ? 'Edit Expense Transaction' : 'New Expense Transaction'}</h1>
-        <button onClick={() => navigate('/transactions')}>Cancel</button>
+        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -333,9 +334,9 @@ export function ExpenseForm() {
         <div style={{ marginTop: '24px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3>Line Items</h3>
-            <button type="button" onClick={handleAddItem} disabled={loading}>
+            <Button type="button" onClick={handleAddItem} disabled={loading} variant="secondary">
               Add Item
-            </button>
+            </Button>
           </div>
           <div className="line-items-table">
             <table style={{ tableLayout: 'fixed' }}>
@@ -347,70 +348,80 @@ export function ExpenseForm() {
                   <th style={{ width: '80px' }}>Actions</th>
                 </tr>
               </thead>
-            <tbody>
-              {formData.items.map((item, index) => (
-                <tr key={index}>
-                  <td style={{ width: '400px' }}>
-                    <select
-                      value={item.account_id}
-                      onChange={(e) => handleItemChange(index, 'account_id', e.target.value)}
-                      required
-                      disabled={loading}
-                      style={{ width: '100%', maxWidth: '400px' }}
-                    >
-                      <option value="">Select account</option>
-                      {accountOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                      disabled={loading}
-                      style={{ width: '100%' }}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={item.amount || ''}
-                      onChange={(e) => handleItemChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                      required
-                      disabled={loading}
-                      style={{ width: '100%' }}
-                    />
-                  </td>
-                  <td>
-                    {formData.items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(index)}
+              <tbody>
+                {formData.items.map((item, index) => (
+                  <tr key={index}>
+                    <td style={{ width: '400px' }}>
+                      <select
+                        value={item.account_id}
+                        onChange={(e) => handleItemChange(index, 'account_id', e.target.value)}
+                        required
                         disabled={loading}
-                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                        style={{
+                          width: '100%',
+                          maxWidth: '400px',
+                          padding: '6px 8px',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '3px',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)'
+                        }}
                       >
-                        Remove
-                      </button>
-                    )}
+                        <option value="">Select account</option>
+                        {accountOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={item.description}
+                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                        disabled={loading}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="form-input"
+                        value={item.amount || ''}
+                        onChange={(e) => handleItemChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                        required
+                        disabled={loading}
+                      />
+                    </td>
+                    <td>
+                      {formData.items.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveItem(index)}
+                          disabled={loading}
+                          variant="danger"
+                          size="sm"
+                          style={{ padding: '4px 8px', fontSize: '12px' }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={2} style={{ textAlign: 'right', fontWeight: 600 }}>
+                    Total:
                   </td>
+                  <td style={{ fontWeight: 600 }}>{formatCurrency(total, 'IDR')}</td>
+                  <td></td>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={2} style={{ textAlign: 'right', fontWeight: 600 }}>
-                  Total:
-                </td>
-                <td style={{ fontWeight: 600 }}>{formatCurrency(total, 'IDR')}</td>
-                <td></td>
-              </tr>
-            </tfoot>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -424,12 +435,12 @@ export function ExpenseForm() {
         {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
-          <button type="submit" className="primary" disabled={loading}>
+          <Button type="submit" variant="primary" isLoading={loading}>
             {isEditing ? 'Update Transaction' : 'Create Transaction'}
-          </button>
-          <button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
+          </Button>
+          <Button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
 

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTransactions } from './hooks/useTransactions';
 import { Table, Column } from '../../components/Table/Table';
 import { useToast } from '../../contexts/ToastContext';
+import { PageLoader } from '../../components/Layout/PageLoader';
 import type { Transaction } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
@@ -75,11 +76,11 @@ export function TransactionList() {
   // Function to highlight matching text in search results
   const highlightText = (text: string, searchTerm: string) => {
     if (!searchTerm) return text;
-    
+
     const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedTerm})`, 'gi');
     const parts = text.split(regex);
-    
+
     return parts.map((part, index) => {
       // Check if this part matches the search term (case-insensitive)
       if (part.toLowerCase() === searchTerm.toLowerCase()) {
@@ -93,7 +94,7 @@ export function TransactionList() {
     });
   };
 
-  const columns: Column<Transaction>[] = [
+  const columns: Column<Transaction>[] = useMemo(() => [
     {
       key: 'transaction_number',
       label: 'Number',
@@ -146,7 +147,7 @@ export function TransactionList() {
       label: 'Details',
       render: (_value, transaction) => {
         const parts: string[] = [];
-        
+
         if (transaction.type === 'Income' && transaction.paid_to_account) {
           parts.push(`To: ${transaction.paid_to_account.account_number} - ${transaction.paid_to_account.name}`);
         } else if (transaction.type === 'Expense' && transaction.paid_from_account) {
@@ -159,11 +160,11 @@ export function TransactionList() {
             parts.push(`To: ${transaction.paid_to_account.account_number} - ${transaction.paid_to_account.name}`);
           }
         }
-        
+
         if (transaction.items && transaction.items.length > 0) {
           parts.push(`${transaction.items.length} item${transaction.items.length > 1 ? 's' : ''}`);
         }
-        
+
         return parts.length > 0 ? parts.join(' | ') : '-';
       },
     },
@@ -201,9 +202,9 @@ export function TransactionList() {
       sortable: true,
       render: (value) => formatCurrency(value, 'IDR'),
     },
-  ];
+  ], [searchTerm]);
 
-  const columnsWithActions: Column<Transaction>[] = [
+  const columnsWithActions: Column<Transaction>[] = useMemo(() => [
     ...columns,
     {
       key: 'actions',
@@ -227,10 +228,10 @@ export function TransactionList() {
         </div>
       ),
     },
-  ];
+  ], [columns]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <PageLoader />;
   }
 
   if (error) {

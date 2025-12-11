@@ -3,20 +3,21 @@ import { useBanks, BankWithDetails } from './hooks/useBanks';
 import { useAccounts } from '../chart-of-accounts/hooks/useAccounts';
 import { Table, Column } from '../../components/Table/Table';
 import { Modal } from '../../components/Modal/Modal';
+import { PageLoader } from '../../components/Layout/PageLoader';
 import { Input } from '../../components/Form/Input';
-import { Select } from '../../components/Form/Select';
+
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency } from '../../lib/utils';
 import type { Bank, Account } from '../../lib/types';
 
 export function Banks() {
-  const { 
-    banks, 
-    loading, 
-    error, 
-    createBank, 
-    updateBank, 
+  const {
+    banks,
+    loading,
+    error,
+    createBank,
+    updateBank,
     deleteBank,
     getBankWithDetails,
     getAvailableWalletAccounts,
@@ -167,7 +168,7 @@ export function Banks() {
       `Are you sure you want to remove ${accountName} from this bank?`,
       async () => {
         if (!selectedBank) return;
-        
+
         try {
           setIsUpdatingWallets(true);
           const { error: updateError } = await supabase
@@ -197,8 +198,8 @@ export function Banks() {
     },
   ];
 
-  if (loading && banks.length === 0) {
-    return <div>Loading...</div>;
+  if (loading) {
+    return <PageLoader />;
   }
 
   if (error && banks.length === 0) {
@@ -304,8 +305,8 @@ export function Banks() {
         maxWidth="800px"
       >
         {detailLoading && (!selectedBank || !selectedBank.accounts) ? (
-          <div style={{ 
-            padding: '40px 20px', 
+          <div style={{
+            padding: '40px 20px',
             textAlign: 'center',
             minHeight: '200px',
             display: 'flex',
@@ -319,10 +320,10 @@ export function Banks() {
         ) : selectedBank ? (
           <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '4px' }}>
             {/* Total Balance */}
-            <div style={{ 
-              marginBottom: '24px', 
-              padding: '16px', 
-              backgroundColor: 'var(--bg-secondary)', 
+            <div style={{
+              marginBottom: '24px',
+              padding: '16px',
+              backgroundColor: 'var(--bg-secondary)',
               borderRadius: '4px',
               border: '1px solid var(--border-color)'
             }}>
@@ -339,7 +340,7 @@ export function Banks() {
               <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
                 Connected Wallet Accounts ({selectedBank.accounts?.length || 0})
               </h3>
-              
+
               {selectedBank.accounts && selectedBank.accounts.length > 0 ? (
                 <div style={{ border: '1px solid var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -387,9 +388,9 @@ export function Banks() {
                   </table>
                 </div>
               ) : (
-                <div style={{ 
-                  padding: '24px', 
-                  textAlign: 'center', 
+                <div style={{
+                  padding: '24px',
+                  textAlign: 'center',
                   color: 'var(--text-secondary)',
                   border: '1px solid var(--border-color)',
                   borderRadius: '4px',
@@ -401,9 +402,9 @@ export function Banks() {
             </div>
 
             {/* Add Wallet Section */}
-            <div style={{ 
-              padding: '16px', 
-              backgroundColor: 'var(--bg-secondary)', 
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'var(--bg-secondary)',
               borderRadius: '4px',
               border: '1px solid var(--border-color)'
             }}>
@@ -431,8 +432,8 @@ export function Banks() {
                     onClick={handleAddWallet}
                     disabled={isUpdatingWallets || !selectedWalletToAdd || availableWallets.length === 0}
                     className="primary"
-                    style={{ 
-                      padding: '6px 16px', 
+                    style={{
+                      padding: '6px 16px',
                       whiteSpace: 'nowrap',
                       fontSize: '14px'
                     }}

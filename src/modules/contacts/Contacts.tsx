@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useContacts } from './hooks/useContacts';
 import { Table, Column } from '../../components/Table/Table';
 import { Modal } from '../../components/Modal/Modal';
+import { PageLoader } from '../../components/Layout/PageLoader';
 import { ContactForm } from './ContactForm';
 import { useToast } from '../../contexts/ToastContext';
 import type { Contact } from '../../lib/types';
@@ -94,7 +95,7 @@ export function Contacts() {
   ];
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <PageLoader />;
   }
 
   if (error) {

@@ -17,41 +17,17 @@ export function useTransactions() {
           payer:contacts!transactions_payer_id_fkey(*),
           payee:contacts!transactions_payee_id_fkey(*),
           paid_from_account:accounts!transactions_paid_from_account_id_fkey(*),
-          paid_to_account:accounts!transactions_paid_to_account_id_fkey(*)
+          paid_to_account:accounts!transactions_paid_to_account_id_fkey(*),
+          items:transaction_items(*, account:accounts(*)),
+          costs:transfer_costs(*, account:accounts(*)),
+          attachments(*)
         `)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
 
-      // Fetch items, costs, and attachments for each transaction
-      const transactionsWithDetails = await Promise.all(
-        (data || []).map(async (transaction) => {
-          const [itemsResult, costsResult, attachmentsResult] = await Promise.all([
-            supabase
-              .from('transaction_items')
-              .select('*, account:accounts(*)')
-              .eq('transaction_id', transaction.id),
-            supabase
-              .from('transfer_costs')
-              .select('*, account:accounts(*)')
-              .eq('transaction_id', transaction.id),
-            supabase
-              .from('attachments')
-              .select('*')
-              .eq('transaction_id', transaction.id),
-          ]);
-
-          return {
-            ...transaction,
-            items: itemsResult.data || [],
-            costs: costsResult.data || [],
-            attachments: attachmentsResult.data || [],
-          };
-        })
-      );
-
-      setTransactions(transactionsWithDetails);
+      setTransactions(data || []);
       setError(null);
     } catch (err: any) {
       setError(err.message);
@@ -74,34 +50,17 @@ export function useTransactions() {
           payer:contacts!transactions_payer_id_fkey(*),
           payee:contacts!transactions_payee_id_fkey(*),
           paid_from_account:accounts!transactions_paid_from_account_id_fkey(*),
-          paid_to_account:accounts!transactions_paid_to_account_id_fkey(*)
+          paid_to_account:accounts!transactions_paid_to_account_id_fkey(*),
+          items:transaction_items(*, account:accounts(*)),
+          costs:transfer_costs(*, account:accounts(*)),
+          attachments(*)
         `)
         .eq('id', id)
         .single();
 
       if (fetchError) throw fetchError;
 
-      const [itemsResult, costsResult, attachmentsResult] = await Promise.all([
-        supabase
-          .from('transaction_items')
-          .select('*, account:accounts(*)')
-          .eq('transaction_id', id),
-        supabase
-          .from('transfer_costs')
-          .select('*, account:accounts(*)')
-          .eq('transaction_id', id),
-        supabase
-          .from('attachments')
-          .select('*')
-          .eq('transaction_id', id),
-      ]);
-
-      return {
-        ...data,
-        items: itemsResult.data || [],
-        costs: costsResult.data || [],
-        attachments: attachmentsResult.data || [],
-      };
+      return data;
     } catch (err: any) {
       setError(err.message);
       throw err;
