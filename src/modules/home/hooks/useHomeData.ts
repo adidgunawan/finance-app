@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTransactions } from '../../transactions/hooks/useTransactions';
 import { useAccounts } from '../../chart-of-accounts/hooks/useAccounts';
-import type { Transaction } from '../../../lib/types';
 
 interface TrendData {
     date: string;
@@ -73,7 +72,7 @@ export function useHomeData(selectedMonth: Date = new Date()) {
         let currentMonthExpense = 0;
         let previousMonthIncome = 0;
         let previousMonthExpense = 0;
-        let todayExpenseByBank = new Map<string, number>();
+        let todayExpenseByAccount = new Map<string, number>();
 
         transactions.forEach((txn) => {
             const txnDate = new Date(txn.date);
@@ -87,11 +86,12 @@ export function useHomeData(selectedMonth: Date = new Date()) {
                 } else if (txn.type === 'Expense') {
                     currentMonthExpense += txn.total;
 
-                    // Track today's spending by bank
-                    if (txn.date === today && txn.bankId) {
-                        todayExpenseByBank.set(
-                            txn.bankId,
-                            (todayExpenseByBank.get(txn.bankId) || 0) + txn.total
+                    // Track today's spending by account (from paid_from_account_id)
+                    if (txn.date === today && (txn as any).paid_from_account_id) {
+                        const accountId = (txn as any).paid_from_account_id;
+                        todayExpenseByAccount.set(
+                            accountId,
+                            (todayExpenseByAccount.get(accountId) || 0) + txn.total
                         );
                     }
                 }
@@ -176,24 +176,10 @@ export function useHomeData(selectedMonth: Date = new Date()) {
             name: account.name,
             balance: account.balance || 0,
             percentOfTotal: totalBalance > 0 ? ((account.balance || 0) / totalBalance) * 100 : 0,
-            todaySpent: todayExpenseByBank.get(account.id) || 0,
+            todaySpent: todayExpenseByAccount.get(account.id) || 0,
         }));
 
-        // Get quick contacts from recent transactions (unique contacts)
-        const contactMap = new Map<string, ContactData>();
-        transactions
-            .filter((t) => t.contact)
-            .slice(0, 20)
-            .forEach((t) => {
-                if (t.contact && !contactMap.has(t.contact.id)) {
-                    contactMap.set(t.contact.id, {
-                        id: t.contact.id,
-                        name: t.contact.name,
-                        avatar: undefined, // We don't have avatars in the data model yet
-                    });
-                }
-            });
-        const quickContacts = Array.from(contactMap.values()).slice(0, 5);
+        // Quick contacts feature removed - not used in current UI
 
         setHomeData({
             totalBalance,
@@ -208,7 +194,7 @@ export function useHomeData(selectedMonth: Date = new Date()) {
             spentTrendData,
             incomeTrendData,
             wallets,
-            quickContacts,
+            quickContacts: [], // Not used in current UI
         });
     }, [transactions, accounts, selectedMonth]);
 
