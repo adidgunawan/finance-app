@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
-import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText, FiRefreshCw, FiCreditCard, FiSearch } from 'react-icons/fi';
+import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText, FiRefreshCw, FiCreditCard, FiSearch, FiHome } from 'react-icons/fi';
 
 const navItems = [
   { path: '/chart-of-accounts', label: 'Chart of Accounts', icon: FiBarChart2 },
@@ -297,9 +297,12 @@ export function Nav() {
         </div>
       </nav >
       <div className="bottom-nav">
-        {navItems.filter(item =>
-          ['/transactions', '/contacts', '/banks'].includes(item.path)
-        ).map(item => {
+        {[
+          { path: '/home', icon: FiHome, label: 'Home' },
+          { path: '/transactions', icon: FiRepeat, label: 'Transactions' },
+          { path: '/contacts', icon: FiUsers, label: 'Contacts' },
+          { path: '/banks', icon: FiCreditCard, label: 'Banks' },
+        ].map(item => {
           const IconComponent = item.icon;
           const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
           return (

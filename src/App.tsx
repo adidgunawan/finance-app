@@ -5,12 +5,14 @@ import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import { Layout } from './components/Layout/Layout';
 import { ToastProvider } from './contexts/ToastContext';
 import { SearchProvider } from './contexts/SearchContext';
+import { DefaultRedirect } from './components/Layout/DefaultRedirect';
 import './styles/globals.css';
 
 import { PageLoader } from './components/Layout/PageLoader';
 
 // Lazy load modules (same as before)
 const Login = lazy(() => import('./pages/Login').then(module => ({ default: module.Login })));
+const Home = lazy(() => import('./modules/home/Home').then(module => ({ default: module.Home })));
 const ChartOfAccounts = lazy(() => import('./modules/chart-of-accounts/ChartOfAccounts').then(module => ({ default: module.ChartOfAccounts })));
 const TransactionList = lazy(() => import('./modules/transactions/TransactionList').then(module => ({ default: module.TransactionList })));
 const IncomeForm = lazy(() => import('./modules/transactions/IncomeForm').then(module => ({ default: module.IncomeForm })));
@@ -41,7 +43,8 @@ function App() {
                     <Layout>
                       <Suspense fallback={<PageLoader />}>
                         <Routes>
-                          <Route path="/" element={<Navigate to="/chart-of-accounts" replace />} />
+                          <Route path="/" element={<DefaultRedirect />} />
+                          <Route path="/home" element={<Home />} />
                           <Route path="/chart-of-accounts" element={<ChartOfAccounts />} />
                           <Route path="/transactions" element={<TransactionList />} />
                           <Route path="/transactions/income/new" element={<IncomeForm />} />
