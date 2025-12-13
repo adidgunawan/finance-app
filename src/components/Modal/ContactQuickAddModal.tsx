@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { Modal } from './Modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ContactForm } from '../../modules/contacts/ContactForm';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -49,9 +54,14 @@ export function ContactQuickAddModal({ isOpen, onClose, onContactAdded }: Contac
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleCancel} title="Add New Contact">
-      <ContactForm onSubmit={handleSubmit} onCancel={handleCancel} />
-    </Modal>
+    <Dialog open={isOpen} onOpenChange={handleCancel}>
+      <DialogContent className="max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Add New Contact</DialogTitle>
+        </DialogHeader>
+        <ContactForm onSubmit={handleSubmit} onCancel={handleCancel} />
+      </DialogContent>
+    </Dialog>
   );
 }
 

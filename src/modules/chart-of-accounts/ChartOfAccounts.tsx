@@ -2,7 +2,12 @@ import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useAccounts } from './hooks/useAccounts';
 import { useSearch } from '../../contexts/SearchContext';
 import { AccountForm } from './AccountForm';
-import { Modal } from '../../components/Modal/Modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { PageLoader } from '../../components/Layout/PageLoader';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -510,31 +515,21 @@ export function ChartOfAccounts() {
                     <span>{group.type}</span>
                   </div>
                   {isTypeExpanded && (
-                    <>
-                      <div className="desktop-only">
-                        <table style={{ width: '100%' }}>
-                          <thead>
-                            <tr>
-                              <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
-                              <th style={{ textAlign: 'left' }}>Account Name</th>
-                              <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
-                              <th style={{ width: '150px' }}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {parentAccounts
-                              .sort((a, b) => a.account_number - b.account_number)
-                              .map((parent) => renderAccountRow(parent, 0, group.accounts))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="mobile-only mobile-list" style={{ marginTop: '12px' }}>
+                    <table style={{ width: '100%' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
+                          <th style={{ textAlign: 'left' }}>Account Name</th>
+                          <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
+                          <th style={{ width: '150px' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                         {parentAccounts
                           .sort((a, b) => a.account_number - b.account_number)
-                          .map((parent) => renderMobileAccountRow(parent, 0, group.accounts))}
-                      </div>
-                    </>
+                          .map((parent) => renderAccountRow(parent, 0, group.accounts))}
+                      </tbody>
+                    </table>
                   )}
                 </div>
               );
@@ -543,39 +538,37 @@ export function ChartOfAccounts() {
         )
       }
 
-      {
-        showForm && (
-          <Modal
-            isOpen={showForm}
-            onClose={handleFormCancel}
-            title="Add Account"
-          >
+      {showForm && (
+        <Dialog open={showForm} onOpenChange={handleFormCancel}>
+          <DialogContent className="max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Add Account</DialogTitle>
+            </DialogHeader>
             <AccountForm
               account={undefined}
               accounts={accounts}
               onSubmit={handleFormSubmit}
               onCancel={handleFormCancel}
             />
-          </Modal>
-        )
-      }
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {
-        showEditModal && editingAccount && (
-          <Modal
-            isOpen={showEditModal}
-            onClose={handleFormCancel}
-            title="Edit Account"
-          >
+      {showEditModal && editingAccount && (
+        <Dialog open={showEditModal} onOpenChange={handleFormCancel}>
+          <DialogContent className="max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Edit Account</DialogTitle>
+            </DialogHeader>
             <AccountForm
               account={editingAccount}
               accounts={accounts}
               onSubmit={handleFormSubmit}
               onCancel={handleFormCancel}
             />
-          </Modal>
-        )
-      }
+          </DialogContent>
+        </Dialog>
+      )}
     </div >
   );
 }

@@ -1,7 +1,9 @@
-import React, { useRef } from 'react';
+import * as React from 'react';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { FormField } from '@/components/ui/form-field';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   label?: string;
@@ -9,9 +11,12 @@ interface FileUploadProps {
   onChange: (files: File[]) => void;
   accept?: string;
   multiple?: boolean;
+  error?: string;
+  description?: string;
+  required?: boolean;
 }
 
-export function FileUpload({ label, value, onChange, accept, multiple = true }: FileUploadProps) {
+export function FileUpload({ label, value, onChange, accept, multiple = true, error, description, required }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,9 +37,8 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
   };
 
   return (
-    <div className="space-y-2">
-      {label && <Label className="text-sm font-medium">{label}</Label>}
-      <div>
+    <FormField label={label} error={error} description={description} required={required}>
+      <div className="space-y-2">
         <input
           ref={fileInputRef}
           type="file"
@@ -43,23 +47,28 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
           onChange={handleFileChange}
           className="hidden"
         />
-        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => fileInputRef.current?.click()}
+          className={cn(error && 'border-destructive')}
+        >
           Choose Files
         </Button>
         {value.length > 0 && (
-          <div className="mt-2 space-y-1">
+          <div className="space-y-2">
             {value.map((file, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between rounded-md border bg-secondary/50 px-3 py-2"
               >
-                <span className="text-sm">{file.name}</span>
+                <span className="text-sm truncate flex-1">{file.name}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => removeFile(index)}
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 ml-2"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -68,6 +77,6 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
           </div>
         )}
       </div>
-    </div>
+    </FormField>
   );
 }

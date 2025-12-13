@@ -16,7 +16,7 @@ export const HighlightText: React.FC<HighlightTextProps> = ({ text, highlight })
         <>
             {parts.map((part, index) =>
                 part.toLowerCase() === highlight.toLowerCase() ? (
-                    <span key={index} style={{ backgroundColor: '#ffeb3b', color: '#000000' }}>
+                    <span key={index} className="bg-yellow-400 text-black">
                         {part}
                     </span>
                 ) : (

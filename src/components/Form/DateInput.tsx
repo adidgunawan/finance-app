@@ -1,17 +1,18 @@
-import React from 'react';
+import * as React from 'react';
 import { Input as ShadcnInput } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FormField } from '@/components/ui/form-field';
 import { cn } from '@/lib/utils';
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  description?: string;
+  required?: boolean;
 }
 
-export function DateInput({ label, error, className = '', ...props }: DateInputProps) {
+export function DateInput({ label, error, description, required, className, ...props }: DateInputProps) {
   return (
-    <div className="space-y-2">
-      {label && <Label className="text-sm font-medium">{label}</Label>}
+    <FormField label={label} error={error} description={description} required={required}>
       <ShadcnInput
         type="date"
         className={cn(
@@ -20,9 +21,6 @@ export function DateInput({ label, error, className = '', ...props }: DateInputP
         )}
         {...props}
       />
-      {error && (
-        <div className="text-sm text-destructive">{error}</div>
-      )}
-    </div>
+    </FormField>
   );
 }

@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal } from '../../components/Modal/Modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { DateInput } from '../../components/Form/DateInput';
 import { Select } from '../../components/Form/Select';
 import { Input } from '../../components/Form/Input';
@@ -507,13 +512,12 @@ export function TransactionMatchModal({
   const transferTotal = transferFormData.amount + transferFormData.costs.reduce((sum, cost) => sum + (cost.amount || 0), 0);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={showForm ? `Create New ${transactionType} Transaction` : 'Find Matching Transaction'}
-      maxWidth="1000px"
-    >
-      <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '4px' }}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-[1000px]">
+        <DialogHeader>
+          <DialogTitle>{showForm ? `Create New ${transactionType} Transaction` : 'Find Matching Transaction'}</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[70vh] overflow-y-auto pr-1">
         {/* Always show CSV details at top */}
         <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '4px' }}>
           <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600' }}>CSV Transaction Details</h3>
@@ -1237,7 +1241,8 @@ export function TransactionMatchModal({
         onClose={() => setShowAddContactModal(false)}
         onContactAdded={handleContactAdded}
       />
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -2,7 +2,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from '../../components/Form/Input';
 import { Select } from '../../components/Form/Select';
 import { DateInput } from '../../components/Form/DateInput';
-import { Modal } from '../../components/Modal/Modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { generateAccountNumber } from '../../lib/utils';
 import { useBanks } from '../banks/hooks/useBanks';
 import { useToast } from '../../contexts/ToastContext';
@@ -256,14 +261,14 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
         </button>
       </div>
 
-      <Modal
-        isOpen={showBankModal}
-        onClose={() => {
-          setShowBankModal(false);
-          setNewBankName('');
-        }}
-        title="Add New Bank"
-      >
+      <Dialog open={showBankModal} onOpenChange={() => {
+        setShowBankModal(false);
+        setNewBankName('');
+      }}>
+        <DialogContent className="max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Bank</DialogTitle>
+          </DialogHeader>
         <div className="form-group">
           <Input
             label="Bank Name"
@@ -300,7 +305,8 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
             Create Bank
           </button>
         </div>
-      </Modal>
+      </DialogContent>
+      </Dialog>
     </form>
   );
 }

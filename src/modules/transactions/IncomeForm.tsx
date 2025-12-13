@@ -11,7 +11,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { ContactQuickAddModal } from '../../components/Modal/ContactQuickAddModal';
 import type { IncomeFormData, Account, Contact } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
-import { Button } from '../../components/Button/Button';
+import { Button } from '../../components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 export function IncomeForm() {
   const navigate = useNavigate();
@@ -282,7 +283,7 @@ export function IncomeForm() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">{isEditing ? 'Edit Income Transaction' : 'New Income Transaction'}</h1>
-        <Button className="desktop-only" onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
+        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -407,7 +408,7 @@ export function IncomeForm() {
                           type="button"
                           onClick={() => handleRemoveItem(index)}
                           disabled={loading}
-                          variant="danger"
+                          variant="destructive"
                           size="sm"
                           style={{ padding: '4px 8px', fontSize: '12px' }}
                         >
@@ -441,7 +442,7 @@ export function IncomeForm() {
                       type="button"
                       onClick={() => handleRemoveItem(index)}
                       disabled={loading}
-                      variant="danger"
+                      variant="destructive"
                       size="sm"
                       style={{ padding: '4px 8px', fontSize: '12px' }}
                     >
@@ -493,10 +494,9 @@ export function IncomeForm() {
             ))}
           </div>
 
-          {/* Mobile Total */}
-          <div className="mobile-total">
-            <span>Total:</span>
-            <span>{formatCurrency(total, 'IDR')}</span>
+          {/* Total Display */}
+          <div style={{ marginTop: '12px', fontWeight: 600 }}>
+            Total: {formatCurrency(total, 'IDR')}
           </div>
         </div>
 
@@ -509,8 +509,15 @@ export function IncomeForm() {
         {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
 
         <div className="form-actions">
-          <Button type="submit" variant="primary" isLoading={loading}>
-            {isEditing ? 'Update Transaction' : 'Create Transaction'}
+          <Button type="submit" variant="default" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {isEditing ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              isEditing ? 'Update Transaction' : 'Create Transaction'
+            )}
           </Button>
           <Button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel

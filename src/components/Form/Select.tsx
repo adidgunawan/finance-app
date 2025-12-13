@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import {
   Select as ShadcnSelect,
   SelectContent,
@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+import { FormField } from '@/components/ui/form-field';
 import { cn } from '@/lib/utils';
 
 interface SelectOption {
@@ -23,6 +23,8 @@ interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   disabled?: boolean;
   className?: string;
+  description?: string;
+  required?: boolean;
 }
 
 export function Select({
@@ -33,7 +35,9 @@ export function Select({
   value,
   onChange,
   disabled,
-  className = '',
+  className,
+  description,
+  required,
 }: SelectProps) {
   const handleValueChange = (newValue: string) => {
     if (onChange) {
@@ -60,8 +64,7 @@ export function Select({
   };
 
   return (
-    <div className="space-y-2">
-      {label && <Label className="text-sm font-medium">{label}</Label>}
+    <FormField label={label} error={error} description={description} required={required}>
       <ShadcnSelect value={value} onValueChange={handleValueChange} disabled={disabled}>
         <SelectTrigger
           className={cn(
@@ -81,7 +84,6 @@ export function Select({
             ))}
         </SelectContent>
       </ShadcnSelect>
-      {error && <div className="text-sm text-destructive">{error}</div>}
-    </div>
+    </FormField>
   );
 }

@@ -2,7 +2,8 @@ import { useRef, useEffect, useLayoutEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
-import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText, FiRefreshCw, FiCreditCard, FiSearch, FiHome, FiSettings, FiHelpCircle } from 'react-icons/fi';
+import { FiBarChart2, FiRepeat, FiUsers, FiLogOut, FiFileText, FiRefreshCw, FiCreditCard, FiHome, FiSettings, FiHelpCircle } from 'react-icons/fi';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -123,16 +124,18 @@ export function Nav() {
         </div>
 
         {/* Desktop Search */}
-        <div className="mb-6 relative">
-          <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm" />
-          <Input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search... (Cmd+K)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-2 rounded-full"
-          />
+        <div className="mb-6 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              type="search"
+              placeholder="Search... (Cmd+K)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-background pl-9"
+            />
+          </div>
         </div>
 
         <div>
@@ -240,30 +243,6 @@ export function Nav() {
           </DropdownMenu>
         </div>
       </nav>
-      <div className="bottom-nav">
-        {[
-          { path: '/home', icon: FiHome, label: 'Home' },
-          { path: '/transactions', icon: FiRepeat, label: 'Transactions' },
-          { path: '/contacts', icon: FiUsers, label: 'Contacts' },
-          { path: '/banks', icon: FiCreditCard, label: 'Banks' },
-        ].map(item => {
-          const IconComponent = item.icon;
-          const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex flex-col items-center justify-center text-[9px] font-medium no-underline p-1 min-w-[60px] transition-all duration-200",
-                isActive ? 'text-accent font-semibold' : 'text-muted-foreground'
-              )}
-            >
-              <IconComponent className="text-lg mb-0.5" />
-              <span>{item.label}</span>
-            </Link>
-          )
-        })}
-      </div>
     </>
   );
 }

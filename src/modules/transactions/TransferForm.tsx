@@ -10,7 +10,8 @@ import { Input } from '../../components/Form/Input';
 import { useToast } from '../../contexts/ToastContext';
 import type { TransferFormData, Account } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
-import { Button } from '../../components/Button/Button';
+import { Button } from '../../components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 export function TransferForm() {
   const navigate = useNavigate();
@@ -272,7 +273,7 @@ export function TransferForm() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">{isEditing ? 'Edit Transfer Transaction' : 'New Transfer Transaction'}</h1>
-        <Button className="desktop-only" onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
+        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -408,7 +409,7 @@ export function TransferForm() {
                             type="button"
                             onClick={() => handleRemoveCost(index)}
                             disabled={loading}
-                            variant="danger"
+                            variant="destructive"
                             size="sm"
                             style={{ padding: '4px 8px', fontSize: '12px' }}
                           >
@@ -431,7 +432,7 @@ export function TransferForm() {
                         type="button"
                         onClick={() => handleRemoveCost(index)}
                         disabled={loading}
-                        variant="danger"
+                        variant="destructive"
                         size="sm"
                         style={{ padding: '4px 8px', fontSize: '12px' }}
                       >
@@ -485,12 +486,8 @@ export function TransferForm() {
           )}
 
           {/* Total Display */}
-          <div style={{ marginTop: '12px', fontWeight: 600 }} className="desktop-only">
+          <div style={{ marginTop: '12px', fontWeight: 600 }}>
             Total: {formatCurrency(total, formData.currency)}
-          </div>
-          <div className="mobile-total">
-            <span>Total:</span>
-            <span>{formatCurrency(total, formData.currency)}</span>
           </div>
         </div>
 
@@ -503,8 +500,15 @@ export function TransferForm() {
         {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
 
         <div className="form-actions">
-          <Button type="submit" variant="primary" isLoading={loading}>
-            {isEditing ? 'Update Transaction' : 'Create Transaction'}
+          <Button type="submit" variant="default" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {isEditing ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              isEditing ? 'Update Transaction' : 'Create Transaction'
+            )}
           </Button>
           <Button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel

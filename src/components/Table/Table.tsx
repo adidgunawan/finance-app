@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState, useMemo } from 'react';
 import {
   Table as ShadcnTable,
@@ -8,8 +9,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/Button/Button';
-import { ArrowUpDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface Column<T> {
@@ -32,7 +33,6 @@ interface TableProps<T> {
   selectable?: boolean;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
-  mobileRenderer?: (row: T, index: number, allData: T[]) => React.ReactNode;
 }
 
 export function Table<T extends { id: string }>({
@@ -47,7 +47,6 @@ export function Table<T extends { id: string }>({
   selectable = false,
   selectedIds = [],
   onSelectionChange,
-  mobileRenderer,
 }: TableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -137,25 +136,28 @@ export function Table<T extends { id: string }>({
   const someSelected = sortedData.some((row) => selectedIds.includes(row.id)) && !allSelected;
 
   return (
-    <div>
+    <div className="space-y-4">
       {searchable && (
-        <div className="mb-4">
-          <Input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
-          />
+        <div className="w-full max-w-sm space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-background pl-9"
+            />
+          </div>
         </div>
       )}
 
-      <div className="desktop-only">
+      <div className="rounded-md border">
         <ShadcnTable>
           <TableHeader>
             <TableRow>
               {selectable && (
-                <TableHead className="w-[40px]">
+                <TableHead className="w-[50px]">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -163,7 +165,7 @@ export function Table<T extends { id: string }>({
                       if (input) input.indeterminate = someSelected;
                     }}
                     onChange={handleSelectAll}
-                    className="cursor-pointer"
+                    className="h-4 w-4 rounded border-input cursor-pointer accent-primary"
                   />
                 </TableHead>
               )}
@@ -172,20 +174,30 @@ export function Table<T extends { id: string }>({
                   key={column.key}
                   style={{ width: column.width }}
                   className={cn(
-                    column.sortable && 'cursor-pointer hover:bg-muted/50',
-                    column.key === 'actions' && 'text-right'
+                    column.sortable && 'cursor-pointer hover:bg-muted/50 transition-colors',
+                    column.key === 'actions' && 'text-right w-[100px]'
                   )}
                   onClick={() => column.sortable && handleSort(column.key)}
                 >
                   <div className="flex items-center gap-2">
                     {column.label}
-                    {column.sortable && sortColumn === column.key && (
-                      <ArrowUpDown className={cn('h-4 w-4', sortDirection === 'desc' && 'rotate-180')} />
+                    {column.sortable && (
+                      <div className="ml-2 flex flex-col">
+                        {sortColumn === column.key ? (
+                          sortDirection === 'asc' ? (
+                            <ArrowUp className="h-3 w-3 text-primary" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-primary" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 text-muted-foreground opacity-50" />
+                        )}
+                      </div>
                     )}
                   </div>
                 </TableHead>
               ))}
-              {onDelete && <TableHead className="w-[80px] text-right">Actions</TableHead>}
+              {onDelete && <TableHead className="w-[100px] text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -193,9 +205,11 @@ export function Table<T extends { id: string }>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length + (onDelete ? 1 : 0) + (selectable ? 1 : 0)}
-                  className="text-center py-8"
+                  className="h-24 text-center"
                 >
-                  {emptyMessage}
+                  <div className="flex flex-col items-center justify-center">
+                    <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -203,7 +217,10 @@ export function Table<T extends { id: string }>({
                 <TableRow
                   key={row.id}
                   onClick={() => onRowClick && onRowClick(row)}
-                  className={cn(onRowClick && 'cursor-pointer')}
+                  className={cn(
+                    onRowClick && 'cursor-pointer',
+                    'hover:bg-muted/50 transition-colors'
+                  )}
                 >
                   {selectable && (
                     <TableCell onClick={(e) => e.stopPropagation()}>
@@ -211,7 +228,7 @@ export function Table<T extends { id: string }>({
                         type="checkbox"
                         checked={selectedIds.includes(row.id)}
                         onChange={() => handleSelectRow(row.id)}
-                        className="cursor-pointer"
+                        className="h-4 w-4 rounded border-input cursor-pointer accent-primary"
                       />
                     </TableCell>
                   )}
@@ -242,15 +259,15 @@ export function Table<T extends { id: string }>({
                         ) : column.render ? (
                           column.render(value, row)
                         ) : (
-                          value
+                          <span className="text-sm">{value}</span>
                         )}
                       </TableCell>
                     );
                   })}
                   {onDelete && (
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
                       <Button
-                        variant="danger"
+                        variant="destructive"
                         size="sm"
                         onClick={() => onDelete(row)}
                       >
@@ -263,53 +280,6 @@ export function Table<T extends { id: string }>({
             )}
           </TableBody>
         </ShadcnTable>
-      </div>
-
-      <div className="mobile-only">
-        {sortedData.length === 0 ? (
-          <div className="text-center py-8">{emptyMessage}</div>
-        ) : (
-          <div className="mobile-list">
-            {sortedData.map((row, index) =>
-              mobileRenderer ? (
-                <div key={row.id}>{mobileRenderer(row, index, sortedData)}</div>
-              ) : (
-                <div
-                  key={row.id}
-                  className="mobile-card"
-                  onClick={() => onRowClick && onRowClick(row)}
-                >
-                  {columns.map((column) => {
-                    if (column.key === 'actions') return null;
-                    const value = (row as any)[column.key];
-                    return (
-                      <div key={column.key} className="mobile-card-row">
-                        <span className="mobile-card-label">{column.label}</span>
-                        <span className="mobile-card-value">
-                          {column.render ? column.render(value, row) : value}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {onDelete && (
-                    <div className="mt-3 text-right">
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(row);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
