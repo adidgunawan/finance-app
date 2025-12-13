@@ -1,69 +1,55 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { authClient } from '../lib/auth-client';
+
+interface User {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+  emailVerified: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { data: session, isPending } = authClient.useSession();
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const result = await authClient.signIn.email({
       email,
       password,
     });
+    
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+  };
 
-    if (error) throw error;
-
-    setSession(data.session);
-    setUser(data.user);
+  const loginWithGoogle = async () => {
+    await authClient.signIn.social({
+      provider: 'google',
+    });
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-
-    setSession(null);
-    setUser(null);
+    await authClient.signOut();
   };
 
   const value = useMemo(() => ({
-    user,
-    session,
-    loading,
+    user: session?.user || null,
+    loading: isPending,
     login,
+    loginWithGoogle,
     logout,
-  }), [user, session, loading]);
+  }), [session, isPending]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

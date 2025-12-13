@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Toast, ToastType } from '../components/Toast/Toast';
-import { ToastContainer } from '../components/Toast/ToastContainer';
+import { createContext, useContext, useCallback, ReactNode } from 'react';
+import { toast } from 'sonner';
 import { ConfirmModal } from '../components/Modal/ConfirmModal';
+import { useState } from 'react';
 
 interface ConfirmState {
   id: string;
@@ -11,7 +11,7 @@ interface ConfirmState {
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType, duration?: number) => string;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info', duration?: number) => string;
   showSuccess: (message: string) => string;
   showError: (message: string) => string;
   showWarning: (message: string) => string;
@@ -24,18 +24,29 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 let toastIdCounter = 0;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
   const [confirmModal, setConfirmModal] = useState<ConfirmState | null>(null);
 
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
-
   const showToast = useCallback(
-    (message: string, type: ToastType = 'info', duration?: number) => {
+    (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration?: number) => {
       const id = `toast-${++toastIdCounter}`;
-      const newToast: Toast = { id, message, type, duration };
-      setToasts((prev) => [...prev, newToast]);
+      const options = duration ? { duration } : {};
+      
+      switch (type) {
+        case 'success':
+          toast.success(message, options);
+          break;
+        case 'error':
+          toast.error(message, options);
+          break;
+        case 'warning':
+          toast.warning(message, options);
+          break;
+        case 'info':
+        default:
+          toast.info(message, options);
+          break;
+      }
+      
       return id;
     },
     []
@@ -86,7 +97,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <ToastContainer toasts={toasts} onClose={removeToast} />
       {confirmModal && (
         <ConfirmModal
           message={confirmModal.message}
@@ -105,4 +115,3 @@ export function useToast() {
   }
   return context;
 }
-

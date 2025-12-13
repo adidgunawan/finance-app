@@ -530,10 +530,10 @@ export function Reconciliation() {
               </div>
             ) : (
               <Select
-                value=""
+                value="no-sessions"
                 onChange={() => { }}
                 disabled={true}
-                options={[{ value: '', label: 'No sessions' }]}
+                options={[{ value: 'no-sessions', label: 'No sessions' }]}
               />
             )}
           </div>

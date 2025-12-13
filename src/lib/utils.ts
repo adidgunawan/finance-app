@@ -1,4 +1,10 @@
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 import type { Account, TransactionItem, TransferCost } from './types';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
 
 export function formatCurrency(amount: number, currency: string = 'IDR'): string {
   return new Intl.NumberFormat('id-ID', {

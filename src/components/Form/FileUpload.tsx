@@ -1,4 +1,7 @@
 import React, { useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { X } from 'lucide-react';
 
 interface FileUploadProps {
   label?: string;
@@ -29,8 +32,8 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
   };
 
   return (
-    <div className="form-group">
-      {label && <label className="form-label">{label}</label>}
+    <div className="space-y-2">
+      {label && <Label className="text-sm font-medium">{label}</Label>}
       <div>
         <input
           ref={fileInputRef}
@@ -38,34 +41,28 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
           accept={accept}
           multiple={multiple}
           onChange={handleFileChange}
-          style={{ display: 'none' }}
+          className="hidden"
         />
-        <button type="button" onClick={() => fileInputRef.current?.click()}>
+        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
           Choose Files
-        </button>
+        </Button>
         {value.length > 0 && (
-          <div style={{ marginTop: '8px' }}>
+          <div className="mt-2 space-y-1">
             {value.map((file, index) => (
               <div
                 key={index}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '4px 8px',
-                  marginTop: '4px',
-                  background: 'var(--bg-secondary)',
-                  borderRadius: '3px',
-                }}
+                className="flex items-center justify-between rounded-md border bg-secondary/50 px-3 py-2"
               >
-                <span style={{ fontSize: '13px' }}>{file.name}</span>
-                <button
+                <span className="text-sm">{file.name}</span>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => removeFile(index)}
-                  style={{ fontSize: '12px', padding: '2px 6px' }}
+                  className="h-6 w-6 p-0"
                 >
-                  Remove
-                </button>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>
@@ -74,5 +71,3 @@ export function FileUpload({ label, value, onChange, accept, multiple = true }: 
     </div>
   );
 }
-
-

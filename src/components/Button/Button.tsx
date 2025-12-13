@@ -1,57 +1,59 @@
 import React from 'react';
+import { Button as ShadcnButton, ButtonProps as ShadcnButtonProps } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-    size?: 'sm' | 'md' | 'lg';
-    isLoading?: boolean;
-    icon?: React.ReactNode;
+interface ButtonProps extends Omit<ShadcnButtonProps, 'variant' | 'size'> {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline' | 'link' | 'default';
+  size?: 'sm' | 'md' | 'lg' | 'default' | 'icon';
+  isLoading?: boolean;
+  icon?: React.ReactNode;
 }
 
+const variantMap: Record<string, ShadcnButtonProps['variant']> = {
+  primary: 'default',
+  secondary: 'secondary',
+  danger: 'destructive',
+  ghost: 'ghost',
+  outline: 'outline',
+  link: 'link',
+  default: 'default',
+};
+
+const sizeMap: Record<string, ShadcnButtonProps['size']> = {
+  sm: 'sm',
+  md: 'default',
+  lg: 'lg',
+  default: 'default',
+  icon: 'icon',
+};
+
 export function Button({
-    variant = 'secondary',
-    size = 'md',
-    isLoading = false,
-    icon,
-    className = '',
-    children,
-    disabled,
-    ...props
+  variant = 'secondary',
+  size = 'md',
+  isLoading = false,
+  icon,
+  className = '',
+  children,
+  disabled,
+  ...props
 }: ButtonProps) {
-    // Map props to classes
-    const variantClass = variant === 'primary' ? 'primary' : variant === 'danger' ? 'danger' : '';
-
-    // Custom styles for sizes or ghost variant can be handled here or via additional CSS classes
-    // For now, we rely on the existing global CSS for basic variants, but we could extend it.
-
-    const baseStyle: React.CSSProperties = {
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        position: 'relative',
-        opacity: disabled || isLoading ? 0.7 : 1,
-        cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
-    };
-
-    return (
-        <button
-            className={`${variantClass} ${className}`}
-            disabled={disabled || isLoading}
-            style={{ ...baseStyle, ...(props.style || {}) }}
-            {...props}
-        >
-            {isLoading ? (
-                // Small spinner for button
-                <div style={{ width: '16px', height: '16px', position: 'relative' }}>
-                    <div className="spinner" style={{ width: '16px', height: '16px', borderTopColor: 'currentColor', borderColor: 'rgba(0,0,0,0.1)' }} />
-                </div>
-            ) : (
-                <>
-                    {icon && <span style={{ display: 'flex' }}>{icon}</span>}
-                    {children}
-                </>
-            )}
-        </button>
-    );
+  return (
+    <ShadcnButton
+      variant={variantMap[variant] || 'secondary'}
+      size={sizeMap[size] || 'default'}
+      disabled={disabled || isLoading}
+      className={cn(className)}
+      {...props}
+    >
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <>
+          {icon && <span className="flex">{icon}</span>}
+          {children}
+        </>
+      )}
+    </ShadcnButton>
+  );
 }

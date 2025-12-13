@@ -6,6 +6,7 @@ import { Layout } from './components/Layout/Layout';
 import { ToastProvider } from './contexts/ToastContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { DefaultRedirect } from './components/Layout/DefaultRedirect';
+import { Toaster } from './components/ui/sonner';
 import './styles/globals.css';
 
 import { PageLoader } from './components/Layout/PageLoader';
@@ -67,6 +68,7 @@ function App() {
               />
             </Routes>
           </ToastProvider>
+          <Toaster />
         </SearchProvider>
       </AuthProvider>
     </BrowserRouter>

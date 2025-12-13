@@ -1,4 +1,16 @@
 import { useState, useMemo } from 'react';
+import {
+  Table as ShadcnTable,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/Button/Button';
+import { ArrowUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export interface Column<T> {
   key: string;
@@ -127,23 +139,23 @@ export function Table<T extends { id: string }>({
   return (
     <div>
       {searchable && (
-        <div style={{ marginBottom: '16px' }}>
-          <input
+        <div className="mb-4">
+          <Input
             type="text"
             placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ maxWidth: '100%', width: '100%' }}
+            className="w-full"
           />
         </div>
       )}
 
       <div className="desktop-only">
-        <table>
-          <thead>
-            <tr>
+        <ShadcnTable>
+          <TableHeader>
+            <TableRow>
               {selectable && (
-                <th style={{ width: '40px' }}>
+                <TableHead className="w-[40px]">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -151,52 +163,57 @@ export function Table<T extends { id: string }>({
                       if (input) input.indeterminate = someSelected;
                     }}
                     onChange={handleSelectAll}
+                    className="cursor-pointer"
                   />
-                </th>
+                </TableHead>
               )}
               {columns.map((column) => (
-                <th
+                <TableHead
                   key={column.key}
-                  style={{
-                    width: column.width,
-                    cursor: column.sortable ? 'pointer' : 'default',
-                    textAlign: column.key === 'actions' ? 'right' : 'left',
-                  }}
+                  style={{ width: column.width }}
+                  className={cn(
+                    column.sortable && 'cursor-pointer hover:bg-muted/50',
+                    column.key === 'actions' && 'text-right'
+                  )}
                   onClick={() => column.sortable && handleSort(column.key)}
                 >
-                  {column.label}
-                  {column.sortable && sortColumn === column.key && (
-                    <span style={{ marginLeft: '4px', color: 'var(--text-tertiary)' }}>
-                      {sortDirection === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
+                  <div className="flex items-center gap-2">
+                    {column.label}
+                    {column.sortable && sortColumn === column.key && (
+                      <ArrowUpDown className={cn('h-4 w-4', sortDirection === 'desc' && 'rotate-180')} />
+                    )}
+                  </div>
+                </TableHead>
               ))}
-              {onDelete && <th style={{ width: '80px' }}>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
+              {onDelete && <TableHead className="w-[80px] text-right">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {sortedData.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + (onDelete ? 1 : 0) + (selectable ? 1 : 0)} style={{ textAlign: 'center', padding: '32px' }}>
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + (onDelete ? 1 : 0) + (selectable ? 1 : 0)}
+                  className="text-center py-8"
+                >
                   {emptyMessage}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               sortedData.map((row) => (
-                <tr
+                <TableRow
                   key={row.id}
                   onClick={() => onRowClick && onRowClick(row)}
-                  style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                  className={cn(onRowClick && 'cursor-pointer')}
                 >
                   {selectable && (
-                    <td onClick={(e) => e.stopPropagation()}>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(row.id)}
                         onChange={() => handleSelectRow(row.id)}
+                        className="cursor-pointer"
                       />
-                    </td>
+                    </TableCell>
                   )}
                   {columns.map((column) => {
                     const isEditing =
@@ -204,61 +221,56 @@ export function Table<T extends { id: string }>({
                     const value = (row as any)[column.key];
 
                     return (
-                      <td
+                      <TableCell
                         key={column.key}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCellClick(row, column);
                         }}
-                        style={{
-                          textAlign: column.key === 'actions' ? 'right' : 'left',
-                        }}
+                        className={cn(column.key === 'actions' && 'text-right')}
                       >
                         {isEditing ? (
-                          <input
+                          <Input
                             type="text"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
                             onBlur={() => handleCellBlur(row, column)}
                             onKeyDown={(e) => handleCellKeyDown(e, row, column)}
                             autoFocus
-                            style={{ width: '100%', margin: '-6px -8px', padding: '6px 8px' }}
+                            className="h-8 w-full"
                           />
                         ) : column.render ? (
                           column.render(value, row)
                         ) : (
                           value
                         )}
-                      </td>
+                      </TableCell>
                     );
                   })}
                   {onDelete && (
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="danger"
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="danger"
+                        size="sm"
                         onClick={() => onDelete(row)}
-                        style={{ fontSize: '12px', padding: '4px 8px' }}
                       >
                         Delete
-                      </button>
-                    </td>
+                      </Button>
+                    </TableCell>
                   )}
-                </tr>
+                </TableRow>
               ))
             )}
-          </tbody>
-
-        </table>
+          </TableBody>
+        </ShadcnTable>
       </div>
 
       <div className="mobile-only">
         {sortedData.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px' }}>
-            {emptyMessage}
-          </div>
+          <div className="text-center py-8">{emptyMessage}</div>
         ) : (
           <div className="mobile-list">
-            {sortedData.map((row, index) => (
+            {sortedData.map((row, index) =>
               mobileRenderer ? (
                 <div key={row.id}>{mobileRenderer(row, index, sortedData)}</div>
               ) : (
@@ -280,26 +292,25 @@ export function Table<T extends { id: string }>({
                     );
                   })}
                   {onDelete && (
-                    <div style={{ marginTop: '12px', textAlign: 'right' }}>
-                      <button
-                        className="danger"
+                    <div className="mt-3 text-right">
+                      <Button
+                        variant="danger"
+                        size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete(row);
                         }}
-                        style={{ fontSize: '12px', padding: '4px 8px' }}
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
               )
-            ))}
+            )}
           </div>
         )}
       </div>
-    </div >
+    </div>
   );
 }
-

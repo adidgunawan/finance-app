@@ -1,4 +1,8 @@
 import { useState, KeyboardEvent } from 'react';
+import { Input as ShadcnInput } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 
 interface TagInputProps {
   label?: string;
@@ -27,39 +31,31 @@ export function TagInput({ label, value, onChange, placeholder = 'Add tags...' }
   };
 
   return (
-    <div className="form-group">
-      {label && <label className="form-label">{label}</label>}
-      <div className="tag-input">
+    <div className="space-y-2">
+      {label && <Label className="text-sm font-medium">{label}</Label>}
+      <div className="flex flex-wrap gap-2 rounded-md border border-input bg-background px-3 py-2 min-h-[2.5rem] items-center">
         {value.map((tag) => (
-          <span key={tag} className="tag">
+          <Badge key={tag} variant="secondary" className="flex items-center gap-1">
             {tag}
             <button
               type="button"
-              className="tag-remove"
               onClick={() => removeTag(tag)}
               onMouseDown={(e) => e.preventDefault()}
+              className="ml-1 rounded-full hover:bg-secondary-foreground/20"
             >
-              ×
+              <X className="h-3 w-3" />
             </button>
-          </span>
+          </Badge>
         ))}
-        <input
+        <ShadcnInput
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={value.length === 0 ? placeholder : ''}
-          style={{
-            border: 'none',
-            outline: 'none',
-            flex: 1,
-            minWidth: '100px',
-            padding: 0,
-            background: 'transparent',
-          }}
+          className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-w-[100px] h-auto p-0"
         />
       </div>
     </div>
   );
 }
-
