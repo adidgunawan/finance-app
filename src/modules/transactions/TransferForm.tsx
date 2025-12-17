@@ -12,6 +12,16 @@ import type { TransferFormData, Account } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { Input as ShadcnInput } from '@/components/ui/input';
+import {
+  Table as ShadcnTable,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function TransferForm() {
   const navigate = useNavigate();
@@ -270,15 +280,24 @@ export function TransferForm() {
   }));
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">{isEditing ? 'Edit Transfer Transaction' : 'New Transfer Transaction'}</h1>
-        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {isEditing ? 'Edit Transfer Transaction' : 'New Transfer Transaction'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Move funds between wallet accounts and optionally record costs.
+          </p>
+        </div>
+        <Button onClick={() => navigate('/transactions')} variant="outline">
+          Cancel
+        </Button>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-row">
-          <Input label="Transaction Number" value={transactionNumber} disabled />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input label="Transaction Number" value={transactionNumber} disabled className="bg-muted" />
           <DateInput
             label="Transaction Date"
             value={formData.transaction_date}
@@ -288,7 +307,7 @@ export function TransferForm() {
           />
         </div>
 
-        <div className="form-row">
+        <div className="grid gap-4 md:grid-cols-2">
           <Select
             label="Paid From (Cash & Bank)"
             value={formData.paid_from_account_id || ''}
@@ -309,7 +328,7 @@ export function TransferForm() {
           />
         </div>
 
-        <div className="form-row">
+        <div className="grid gap-4 md:grid-cols-2">
           <Input
             label="Amount"
             type="number"
@@ -335,101 +354,93 @@ export function TransferForm() {
           onChange={(tags) => setFormData({ ...formData, tags })}
         />
 
-        <div style={{ marginTop: '24px', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3>Optional Costs</h3>
-            <Button type="button" onClick={handleAddCost} disabled={loading} variant="secondary">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Optional Costs</CardTitle>
+              <CardDescription>Fees or charges related to the transfer.</CardDescription>
+            </div>
+            <Button type="button" onClick={handleAddCost} disabled={loading} variant="outline">
               Add Cost
             </Button>
-          </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {formData.costs.length > 0 ? (
+              <ShadcnTable>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[420px]">Account</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-[160px] text-right">Amount</TableHead>
+                    <TableHead className="w-[90px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {formData.costs.map((cost, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <select
+                          value={cost.account_id}
+                          onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
+                          required
+                          disabled={loading}
+                          className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="">Select account</option>
+                          {costAccountOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </TableCell>
+                      <TableCell>
+                        <ShadcnInput
+                          type="text"
+                          value={cost.description}
+                          onChange={(e) => handleCostChange(index, 'description', e.target.value)}
+                          disabled={loading}
+                          placeholder="Optional description"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ShadcnInput
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={cost.amount || ''}
+                          onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                          required
+                          disabled={loading}
+                          className="text-right"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveCost(index)}
+                          disabled={loading}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </ShadcnTable>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No costs added.
+              </p>
+            )}
 
-          {formData.costs.length > 0 && (
-            <>
-              {/* Desktop Table View */}
-              <div className="line-items-table">
-                <table style={{ tableLayout: 'fixed' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ width: '400px' }}>Account</th>
-                      <th>Description</th>
-                      <th style={{ width: '150px' }}>Amount</th>
-                      <th style={{ width: '80px' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {formData.costs.map((cost, index) => (
-                      <tr key={index}>
-                        <td style={{ width: '400px' }}>
-                          <select
-                            value={cost.account_id}
-                            onChange={(e) => handleCostChange(index, 'account_id', e.target.value)}
-                            required
-                            disabled={loading}
-                            style={{
-                              width: '100%',
-                              maxWidth: '400px',
-                              padding: '6px 8px',
-                              border: '1px solid var(--border-color)',
-                              borderRadius: '3px',
-                              backgroundColor: 'var(--bg-primary)',
-                              color: 'var(--text-primary)'
-                            }}
-                          >
-                            <option value="">Select account</option>
-                            {costAccountOptions.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={cost.description}
-                            onChange={(e) => handleCostChange(index, 'description', e.target.value)}
-                            disabled={loading}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            className="form-input"
-                            value={cost.amount || ''}
-                            onChange={(e) => handleCostChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                            required
-                            disabled={loading}
-                          />
-                        </td>
-                        <td>
-                          <Button
-                            type="button"
-                            onClick={() => handleRemoveCost(index)}
-                            disabled={loading}
-                            variant="destructive"
-                            size="sm"
-                            style={{ padding: '4px 8px', fontSize: '12px' }}
-                          >
-                            Remove
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-            </>
-          )}
-
-          {/* Total Display */}
-          <div style={{ marginTop: '12px', fontWeight: 600 }}>
-            Total: {formatCurrency(total, formData.currency)}
-          </div>
-        </div>
+            <div className="text-sm font-medium">
+              Total: {formatCurrency(total, formData.currency)}
+            </div>
+          </CardContent>
+        </Card>
 
         <FileUpload
           label="Attachments"
@@ -437,9 +448,9 @@ export function TransferForm() {
           onChange={(files) => setFormData({ ...formData, attachments: files })}
         />
 
-        {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
+        {error ? <div className="text-sm text-destructive">{error}</div> : null}
 
-        <div className="form-actions">
+        <div className="flex gap-2">
           <Button type="submit" variant="default" disabled={loading}>
             {loading ? (
               <>
@@ -450,7 +461,7 @@ export function TransferForm() {
               isEditing ? 'Update Transaction' : 'Create Transaction'
             )}
           </Button>
-          <Button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel
           </Button>
         </div>

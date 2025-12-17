@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { generateTransactionNumber } from '../../lib/utils/transactionNumber';
 import type { TransactionMatchResult, ParsedCsvRow, Account, Contact, ExpenseFormData, IncomeFormData, TransferFormData } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface TransactionMatchModalProps {
   isOpen: boolean;
@@ -519,13 +520,13 @@ export function TransactionMatchModal({
         </DialogHeader>
         <div className="max-h-[70vh] overflow-y-auto pr-1">
         {/* Always show CSV details at top */}
-        <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '4px' }}>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600' }}>CSV Transaction Details</h3>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <div><strong>Date:</strong> {formatDate(csvRow.date)}</div>
-            <div><strong>Description:</strong> {csvRow.description}</div>
-            <div><strong>Amount:</strong> {formatCurrency(csvRow.amount, 'IDR')}</div>
-            <div><strong>Type:</strong> {csvRow.type.toUpperCase()}</div>
+        <div className="mb-5 rounded-md border bg-muted/40 p-3">
+          <h3 className="mb-2 text-sm font-semibold">CSV Transaction Details</h3>
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <div><span className="font-medium text-foreground">Date:</span> {formatDate(csvRow.date)}</div>
+            <div><span className="font-medium text-foreground">Description:</span> {csvRow.description}</div>
+            <div><span className="font-medium text-foreground">Amount:</span> {formatCurrency(csvRow.amount, 'IDR')}</div>
+            <div><span className="font-medium text-foreground">Type:</span> {csvRow.type.toUpperCase()}</div>
           </div>
         </div>
 
@@ -541,24 +542,18 @@ export function TransactionMatchModal({
                   {matches.map((match) => (
                     <div
                       key={match.transaction.id}
-                      style={{
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '4px',
-                        padding: '16px',
-                        marginBottom: '12px',
-                        backgroundColor: 'var(--bg-primary)',
-                      }}
+                      className="mb-3 rounded-md border bg-background p-4"
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div className="flex items-start justify-between gap-4 mb-2">
                         <div>
-                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                          <div className="font-semibold">
                             {match.transaction.transaction_number}
                           </div>
-                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          <div className="text-sm text-muted-foreground">
                             {formatDate(match.transaction.date)} • {match.transaction.type}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="flex items-center gap-2">
                           <span
                             style={{
                               padding: '4px 8px',
@@ -574,7 +569,7 @@ export function TransactionMatchModal({
                         </div>
                       </div>
 
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      <div className="mb-2 text-sm text-muted-foreground">
                         {match.reason}
                       </div>
 
@@ -588,113 +583,49 @@ export function TransactionMatchModal({
                         </div>
                       )}
 
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                        <button
-                          onClick={() => handleLinkTransaction(match.transaction.id)}
-                          style={{
-                            flex: 1,
-                            padding: '8px 16px',
-                            border: 'none',
-                            borderRadius: '4px',
-                            background: 'var(--accent)',
-                            color: 'white',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            fontWeight: '500',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.opacity = '0.9';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.opacity = '1';
-                          }}
-                        >
+                      <div className="mt-3 flex gap-2">
+                        <Button className="flex-1" onClick={() => handleLinkTransaction(match.transaction.id)}>
                           Link to This Transaction
-                        </button>
-                        <button
-                          onClick={() => handleViewTransaction(match.transaction.id)}
-                          style={{
-                            padding: '8px 16px',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '4px',
-                            background: 'var(--bg-primary)',
-                            color: 'var(--text-primary)',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            fontWeight: '500',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
-                          }}
-                        >
+                        </Button>
+                        <Button variant="outline" onClick={() => handleViewTransaction(match.transaction.id)}>
                           View
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
-                <p style={{ marginBottom: '16px' }}>No matching transactions found.</p>
-                <p style={{ fontSize: '13px', marginBottom: '24px' }}>
+              <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
+                <p className="mb-2 font-medium text-foreground">No matching transactions found.</p>
+                <p className="mb-4 text-sm">
                   You can create a new transaction using the CSV details.
                 </p>
               </div>
             )}
 
             {/* Create New Transaction Button */}
-            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center' }}>
-              <button
-                onClick={handleShowForm}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  background: 'var(--success)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.9';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1';
-                }}
-              >
-                Create New Transaction
-              </button>
+            <div className="mt-6 flex justify-center border-t pt-4">
+              <Button onClick={handleShowForm}>Create New Transaction</Button>
             </div>
           </>
         ) : (
           <>
             {/* Form view */}
-            <div style={{ marginBottom: '20px' }}>
-              <button
+            <div className="mb-5">
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleBackToMatches}
-                style={{
-                  padding: '6px 12px',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '4px',
-                  background: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  marginBottom: '16px',
-                }}
+                className="mb-4"
               >
                 ← Back to Matches
-              </button>
+              </Button>
 
               {/* Transaction Type Selector */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Transaction Type</label>
+              <div className="max-w-xs">
                 <Select
+                  label="Transaction Type"
                   value={transactionType}
                   onChange={(e) => setTransactionType(e.target.value as 'Expense' | 'Income' | 'Transfer')}
                   options={[
@@ -708,7 +639,7 @@ export function TransactionMatchModal({
 
               {transactionType === 'Expense' ? (
                 <form onSubmit={handleExpenseSubmit}>
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
                     <Input label="Transaction Number" value={transactionNumber} disabled />
                     <DateInput
                       label="Transaction Date"
@@ -719,7 +650,7 @@ export function TransactionMatchModal({
                     />
                   </div>
 
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
                     <Select
                       label="Payee"
                       value={expenseFormData.payee_id || ''}
@@ -872,18 +803,18 @@ export function TransactionMatchModal({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={handleBackToMatches} disabled={loading}>
+                  <div className="mt-6 flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={handleBackToMatches} disabled={loading}>
                       Cancel
-                    </button>
-                    <button type="submit" className="primary" disabled={loading}>
+                    </Button>
+                    <Button type="submit" disabled={loading}>
                       Create Transaction
-                    </button>
+                    </Button>
                   </div>
                 </form>
               ) : transactionType === 'Income' ? (
                 <form onSubmit={handleIncomeSubmit}>
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
                     <Input label="Transaction Number" value={transactionNumber} disabled />
                     <DateInput
                       label="Transaction Date"
@@ -894,7 +825,7 @@ export function TransactionMatchModal({
                     />
                   </div>
 
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
                     <Select
                       label="Payer"
                       value={incomeFormData.payer_id || ''}
@@ -1047,18 +978,18 @@ export function TransactionMatchModal({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={handleBackToMatches} disabled={loading}>
+                  <div className="mt-6 flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={handleBackToMatches} disabled={loading}>
                       Cancel
-                    </button>
-                    <button type="submit" className="primary" disabled={loading}>
+                    </Button>
+                    <Button type="submit" disabled={loading}>
                       Create Transaction
-                    </button>
+                    </Button>
                   </div>
                 </form>
               ) : (
                 <form onSubmit={handleTransferSubmit}>
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
                     <Input label="Transaction Number" value={transactionNumber} disabled />
                     <DateInput
                       label="Transaction Date"
@@ -1069,7 +1000,7 @@ export function TransactionMatchModal({
                     />
                   </div>
 
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
                     <Select
                       label="Paid From (Cash & Bank)"
                       value={transferFormData.paid_from_account_id || ''}
@@ -1090,7 +1021,7 @@ export function TransactionMatchModal({
                     />
                   </div>
 
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
                     <Input
                       label="Amount"
                       type="number"
@@ -1221,13 +1152,13 @@ export function TransactionMatchModal({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={handleBackToMatches} disabled={loading}>
+                  <div className="mt-6 flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={handleBackToMatches} disabled={loading}>
                       Cancel
-                    </button>
-                    <button type="submit" className="primary" disabled={loading}>
+                    </Button>
+                    <Button type="submit" disabled={loading}>
                       Create Transaction
-                    </button>
+                    </Button>
                   </div>
                 </form>
               )}

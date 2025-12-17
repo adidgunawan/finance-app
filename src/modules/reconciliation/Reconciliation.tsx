@@ -12,6 +12,7 @@ import { PageLoader } from '../../components/Layout/PageLoader';
 import { Select } from '../../components/Form/Select';
 import { useToast } from '../../contexts/ToastContext';
 import type { ParsedCsvRow, ReconciliationCsvData, MatchStatus } from '../../lib/types';
+import { Button } from '@/components/ui/button';
 
 export function Reconciliation() {
 
@@ -394,9 +395,12 @@ export function Reconciliation() {
   }
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">Bank Reconciliation</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Bank Reconciliation</h1>
+        <p className="text-sm text-muted-foreground">
+          Match imported bank transactions to existing records.
+        </p>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -408,9 +412,9 @@ export function Reconciliation() {
           alignItems: 'flex-start'
         }}>
           {/* Wallet Account */}
-          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
-            <label className="form-label">Wallet Account</label>
+          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
             <Select
+              label="Wallet Account"
               value={selectedAccountId || ''}
               onChange={(e) => {
                 setSelectedAccountId(e.target.value || null);
@@ -428,9 +432,9 @@ export function Reconciliation() {
           </div>
 
           {/* Bank Name */}
-          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
-            <label className="form-label">Bank Name</label>
+          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
             <Select
+              label="Bank Name"
               value={bankName || ''}
               onChange={() => { }}
               disabled={true}
@@ -441,12 +445,12 @@ export function Reconciliation() {
           </div>
 
           {/* Session Selection */}
-          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
-            <label className="form-label">Session</label>
+          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
             {sessions.length > 0 ? (
               <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
                   <Select
+                    label="Session"
                     value={currentSession?.id || ''}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -479,57 +483,29 @@ export function Reconciliation() {
                     ]}
                   />
                   {isProcessing && (
-                    <div style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      fontSize: '12px',
-                      color: 'var(--text-secondary)',
-                      pointerEvents: 'none',
-                    }}>
+                    <div
+                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"
+                    >
                       Loading...
                     </div>
                   )}
                 </div>
                 {currentSession && (
-                  <button
+                  <Button
                     type="button"
+                    variant="destructive"
+                    size="sm"
                     onClick={() => handleDeleteSession(currentSession.id)}
                     disabled={isProcessing}
-                    style={{
-                      padding: '6px 12px',
-                      border: '1px solid var(--error)',
-                      borderRadius: '3px',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--error)',
-                      cursor: isProcessing ? 'not-allowed' : 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      opacity: isProcessing ? 0.5 : 1,
-                      whiteSpace: 'nowrap',
-                      alignSelf: 'flex-start',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isProcessing) {
-                        e.currentTarget.style.backgroundColor = 'var(--error)';
-                        e.currentTarget.style.color = 'white';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isProcessing) {
-                        e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
-                        e.currentTarget.style.color = 'var(--error)';
-                      }
-                    }}
                     title="Delete this session"
                   >
                     Delete
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : (
               <Select
+                label="Session"
                 value="no-sessions"
                 onChange={() => { }}
                 disabled={true}
@@ -539,10 +515,10 @@ export function Reconciliation() {
           </div>
 
           {/* CSV Upload */}
-          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
-            <label className="form-label">Upload CSV</label>
+          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
             {selectedAccountId && bankName ? (
               <div>
+                <div className="mb-2 text-sm font-medium">Upload CSV</div>
                 <FileUpload
                   value={csvFile ? [csvFile] : []}
                   onChange={handleFileUpload}
@@ -550,32 +526,23 @@ export function Reconciliation() {
                   multiple={false}
                 />
                 {isProcessing && (
-                  <div style={{ marginTop: '4px', color: 'var(--text-secondary)', fontSize: '11px' }}>
+                  <div className="mt-1 text-xs text-muted-foreground">
                     Processing...
                   </div>
                 )}
                 {csvFile && !isProcessing && (
-                  <div style={{ marginTop: '4px', fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div className="mt-1 truncate text-xs text-muted-foreground">
                     {csvFile.name}
                   </div>
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                disabled
-                style={{
-                  opacity: 0.5,
-                  cursor: 'not-allowed',
-                  padding: '6px 12px',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '3px',
-                  background: 'var(--bg-secondary)',
-                  fontSize: '14px',
-                }}
-              >
-                Choose Files
-              </button>
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Upload CSV</div>
+                <Button type="button" variant="outline" disabled>
+                  Choose Files
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -583,11 +550,11 @@ export function Reconciliation() {
         {/* CSV Data Display */}
         {csvData && csvData.rows.length > 0 && (
           <>
-            <div style={{ marginTop: '24px' }}>
-              <h2 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>
+            <div className="mt-6 space-y-3">
+              <h2 className="text-lg font-semibold">
                 CSV Transactions ({csvData.rows.length} rows)
               </h2>
-              <div style={{ marginBottom: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <div className="text-sm text-muted-foreground">
                 Account: {csvData.metadata.account_name} ({csvData.metadata.account_number}) - {csvData.metadata.currency}
               </div>
               <CsvTransactionTable
@@ -608,19 +575,10 @@ export function Reconciliation() {
 
             {/* Finalize Button */}
             {currentSession && (
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={handleFinalize}
-                  disabled={isProcessing}
-                  className="primary"
-                  style={{
-                    padding: '12px 24px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                  }}
-                >
+              <div className="mt-6 flex justify-end">
+                <Button onClick={handleFinalize} disabled={isProcessing}>
                   Finalize Reconciliation
-                </button>
+                </Button>
               </div>
             )}
           </>

@@ -1,6 +1,16 @@
 import type { ParsedCsvRow, MatchStatus } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { HighlightText } from '../../components/Text/HighlightText';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Table as ShadcnTable,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface CsvTransactionTableProps {
   rows: ParsedCsvRow[];
@@ -21,137 +31,85 @@ export function CsvTransactionTable({
       return null;
     }
 
-    const styles: Record<MatchStatus, { bg: string; color: string; text: string }> = {
-      matched: { bg: '#e8f5e9', color: '#2e7d32', text: 'Matched' },
-      new: { bg: '#fff3e0', color: '#e65100', text: 'New Transaction' },
-      pending: { bg: 'transparent', color: 'transparent', text: '' },
+    const styles: Record<MatchStatus, { className: string; text: string }> = {
+      matched: { className: 'bg-emerald-50 text-emerald-700 border-emerald-200', text: 'Matched' },
+      new: { className: 'bg-amber-50 text-amber-700 border-amber-200', text: 'New Transaction' },
+      pending: { className: '', text: '' },
     };
 
-    const style = styles[status];
-
     return (
-      <span
-        style={{
-          display: 'inline-block',
-          padding: '2px 8px',
-          borderRadius: '3px',
-          fontSize: '11px',
-          fontWeight: '500',
-          backgroundColor: style.bg,
-          color: style.color,
-        }}
-      >
-        {style.text}
-      </span>
+      <Badge variant="outline" className={styles[status].className}>
+        {styles[status].text}
+      </Badge>
     );
   };
 
   if (rows.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+      <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
         No CSV transactions to display
       </div>
     );
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-            <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Date</th>
-            <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Description</th>
-            <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Branch</th>
-            <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600' }}>Amount</th>
-            <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600' }}>Balance</th>
-            <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600' }}>Type</th>
-            <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600' }}>Status</th>
-            <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="overflow-x-auto rounded-md border">
+      <ShadcnTable>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[140px]">Date</TableHead>
+            <TableHead className="min-w-[320px]">Description</TableHead>
+            <TableHead className="w-[160px]">Branch</TableHead>
+            <TableHead className="w-[160px] text-right">Amount</TableHead>
+            <TableHead className="w-[160px] text-right">Balance</TableHead>
+            <TableHead className="w-[120px] text-center">Type</TableHead>
+            <TableHead className="w-[160px] text-center">Status</TableHead>
+            <TableHead className="w-[160px] text-center">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((row, index) => (
-            <tr
-              key={index}
-              style={{
-                borderBottom: '1px solid var(--border-color)',
-                backgroundColor: index % 2 === 0 ? 'transparent' : 'var(--bg-secondary)',
-              }}
-            >
-              <td style={{ padding: '12px' }}>{formatDate(row.date)}</td>
-              <td style={{ padding: '12px', maxWidth: '400px' }}>
-                <div
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '400px',
-                  }}
-                  title={row.description}
-                >
+            <TableRow key={index}>
+              <TableCell>{formatDate(row.date)}</TableCell>
+              <TableCell className="max-w-[520px]">
+                <div className="truncate" title={row.description}>
                   {searchTerm ? <HighlightText text={row.description} highlight={searchTerm} /> : row.description}
                 </div>
-              </td>
-              <td style={{ padding: '12px' }}>
+              </TableCell>
+              <TableCell>
                 {searchTerm ? <HighlightText text={row.branch} highlight={searchTerm} /> : row.branch}
-              </td>
-              <td
-                style={{
-                  padding: '12px',
-                  textAlign: 'right',
-                  color: row.type === 'debit' ? 'var(--error)' : 'var(--success)',
-                }}
-              >
+              </TableCell>
+              <TableCell className={row.type === 'debit' ? 'text-right text-destructive' : 'text-right text-emerald-600'}>
                 {searchTerm ? <HighlightText text={formatCurrency(row.amount, 'IDR')} highlight={searchTerm} /> : formatCurrency(row.amount, 'IDR')}
-              </td>
-              <td style={{ padding: '12px', textAlign: 'right' }}>
+              </TableCell>
+              <TableCell className="text-right">
                 {formatCurrency(row.balance, 'IDR')}
-              </td>
-              <td style={{ padding: '12px', textAlign: 'center' }}>
-                <span
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '3px',
-                    fontSize: '11px',
-                    fontWeight: '500',
-                    backgroundColor: row.type === 'debit' ? '#ffebee' : '#e8f5e9',
-                    color: row.type === 'debit' ? '#c62828' : '#2e7d32',
-                  }}
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge
+                  variant="outline"
+                  className={row.type === 'debit'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  }
                 >
                   {row.type.toUpperCase()}
-                </span>
-              </td>
-              <td style={{ padding: '12px', textAlign: 'center' }}>
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">
                 {getMatchStatusBadge(index)}
-              </td>
-              <td style={{ padding: '12px', textAlign: 'center' }}>
-                {onFindTransaction && (
-                  <button
-                    onClick={() => onFindTransaction(index, row)}
-                    style={{
-                      fontSize: '12px',
-                      padding: '6px 12px',
-                      backgroundColor: 'var(--accent)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '3px',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = '0.9';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = '1';
-                    }}
-                  >
+              </TableCell>
+              <TableCell className="text-center">
+                {onFindTransaction ? (
+                  <Button size="sm" onClick={() => onFindTransaction(index, row)}>
                     Find Transaction
-                  </button>
-                )}
-              </td>
-            </tr>
+                  </Button>
+                ) : null}
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </ShadcnTable>
     </div>
   );
 }

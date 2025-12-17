@@ -52,9 +52,9 @@ export function BankConfig({ accountId, onBankSelected }: BankConfigProps) {
 
   if (!accountId) {
     return (
-      <div className="form-group">
-        <label className="form-label">Bank Name</label>
-        <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+      <div className="space-y-2">
+        <div className="text-sm font-medium">Bank Name</div>
+        <div className="text-sm text-muted-foreground">
           Please select a wallet account first
         </div>
       </div>
@@ -62,18 +62,16 @@ export function BankConfig({ accountId, onBankSelected }: BankConfigProps) {
   }
 
   return (
-    <div className="form-group">
-      <label className="form-label">Bank Name</label>
-      <Select
-        value={currentBank}
-        onChange={(e) => handleBankChange(e.target.value)}
-        options={[
-          { value: '', label: 'Select Bank...' },
-          ...AVAILABLE_BANKS.map((bank) => ({ value: bank, label: bank })),
-        ]}
-        disabled={isLoading || loading}
-      />
-    </div>
+    <Select
+      label="Bank Name"
+      value={currentBank}
+      onChange={(e) => handleBankChange(e.target.value)}
+      options={[
+        { value: '', label: 'Select Bank...' },
+        ...AVAILABLE_BANKS.map((bank) => ({ value: bank, label: bank })),
+      ]}
+      disabled={isLoading || loading}
+    />
   );
 }
 

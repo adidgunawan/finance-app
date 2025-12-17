@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { PageLoader } from '../../components/Layout/PageLoader';
 import { ContactForm } from './ContactForm';
 import { useToast } from '../../contexts/ToastContext';
@@ -113,7 +114,7 @@ export function Contacts() {
   }
 
   if (error) {
-    return <div style={{ color: 'var(--error)' }}>Error: {error}</div>;
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
 
@@ -124,35 +125,26 @@ export function Contacts() {
       label: 'Actions',
       width: '150px',
       render: (_value, contact) => (
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => handleEdit(contact)}
-            style={{ fontSize: '12px', padding: '4px 8px' }}
-          >
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="outline" onClick={() => handleEdit(contact)}>
             Edit
-          </button>
-          <button
-            className="danger"
-            onClick={() => handleDelete(contact)}
-            style={{ fontSize: '12px', padding: '4px 8px' }}
-          >
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => handleDelete(contact)}>
             Delete
-          </button>
+          </Button>
         </div>
       ),
     },
   ];
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">Contacts</h1>
-        <button onClick={handleAdd} className="primary">
-          Add Contact
-        </button>
-      </div>
-
-      <div style={{ marginBottom: '16px' }}>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
+          <p className="text-sm text-muted-foreground">Manage your payers and payees.</p>
+        </div>
+        <Button onClick={handleAdd}>Add Contact</Button>
       </div>
 
       <Table

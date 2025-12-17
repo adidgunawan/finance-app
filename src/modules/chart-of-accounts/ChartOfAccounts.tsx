@@ -14,6 +14,9 @@ import { useToast } from '../../contexts/ToastContext';
 import type { Account, AccountType } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 import { HighlightText } from '../../components/Text/HighlightText';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Minus, Plus } from 'lucide-react';
 
 interface AccountGroup {
   type: AccountType;
@@ -277,67 +280,49 @@ export function ChartOfAccounts() {
 
     return (
       <Fragment key={account.id}>
-        <tr
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            fontWeight: isParent ? '600' : '400',
-          }}
-        >
-          <td style={{ paddingLeft: `${12 + indent}px` }}>
+        <tr className={cn("bg-background", isParent && "font-medium")}>
+          <td className="py-2" style={{ paddingLeft: `${12 + indent}px` }}>
             {hasChildren && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="mr-1 h-6 w-6"
                 onClick={() => toggleParentExpanded(account.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '0 4px',
-                  marginRight: '4px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                }}
               >
-                {isExpanded ? '−' : '+'}
-              </button>
+                {isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              </Button>
             )}
-            {!hasChildren && <span style={{ marginLeft: '20px' }} />}
-            <span style={{ fontWeight: isParent ? '600' : '400' }}>
+            {!hasChildren && <span className="inline-block w-7" />}
+            <span className={cn(isParent && "font-medium")}>
               <HighlightText text={account.account_number.toString()} highlight={searchTerm} />
             </span>
           </td>
           <td>
-            <span style={{ fontWeight: isParent ? '600' : '400' }}>
+            <span className={cn(isParent && "font-medium")}>
               <HighlightText text={account.name} highlight={searchTerm} />
             </span>
           </td>
-          <td style={{ textAlign: 'right', fontWeight: isParent ? '600' : '400' }}>
+          <td className={cn("text-right", isParent && "font-medium")}>
             {account.balance !== undefined ? formatCurrency(account.balance, 'IDR') : '-'}
           </td>
           <td>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => handleEdit(account)}
-                style={{ fontSize: '12px', padding: '4px 8px' }}
-              >
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => handleEdit(account)}>
                 Edit
-              </button>
-              <button
-                className="danger"
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(account);
                 }}
                 disabled={hasLinkedTransactions}
-                style={{
-                  fontSize: '12px',
-                  padding: '4px 8px',
-                  opacity: hasLinkedTransactions ? 0.5 : 1,
-                  cursor: hasLinkedTransactions ? 'not-allowed' : 'pointer',
-                }}
                 title={hasLinkedTransactions ? 'Cannot delete account with linked transactions' : 'Delete account'}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </td>
         </tr>
@@ -357,69 +342,54 @@ export function ChartOfAccounts() {
   }
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">Chart of Accounts</h1>
-        <button className="primary" onClick={handleCreate}>
-          Add Account
-        </button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Chart of Accounts</h1>
+          <p className="text-sm text-muted-foreground">Your account hierarchy and balances.</p>
+        </div>
+        <Button onClick={handleCreate}>Add Account</Button>
       </div>
 
       {
         groupedAccounts.length === 0 ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
             No accounts found. Create your first account to get started.
           </div>
         ) : (
-          <div>
+          <div className="space-y-6">
             {groupedAccounts.map((group) => {
               const parentAccounts = getParentAccounts(group.accounts);
               const isTypeExpanded = expandedTypes.has(group.type);
 
               return (
-                <div key={group.type} style={{ marginBottom: '24px' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px',
-                      background: 'var(--bg-secondary)',
-                      borderBottom: '1px solid var(--border-color)',
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                    }}
+                <div key={group.type} className="rounded-md border">
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium"
                     onClick={() => toggleTypeExpanded(group.type)}
                   >
-                    <button
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '0 4px',
-                        marginRight: '8px',
-                        fontSize: '14px',
-                      }}
-                    >
-                      {isTypeExpanded ? '−' : '+'}
-                    </button>
+                    {isTypeExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     <span>{group.type}</span>
-                  </div>
+                  </button>
                   {isTypeExpanded && (
-                    <table style={{ width: '100%' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
-                          <th style={{ textAlign: 'left' }}>Account Name</th>
-                          <th style={{ width: '150px', textAlign: 'right' }}>Balance</th>
-                          <th style={{ width: '150px' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {parentAccounts
-                          .sort((a, b) => a.account_number - b.account_number)
-                          .map((parent) => renderAccountRow(parent, 0, group.accounts))}
-                      </tbody>
-                    </table>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="text-muted-foreground">
+                          <tr className="border-b">
+                            <th className="w-[140px] px-3 py-2 text-left font-medium">Number</th>
+                            <th className="px-3 py-2 text-left font-medium">Account Name</th>
+                            <th className="w-[160px] px-3 py-2 text-right font-medium">Balance</th>
+                            <th className="w-[180px] px-3 py-2 text-left font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="[&_tr:hover]:bg-muted/30">
+                          {parentAccounts
+                            .sort((a, b) => a.account_number - b.account_number)
+                            .map((parent) => renderAccountRow(parent, 0, group.accounts))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               );

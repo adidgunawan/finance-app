@@ -5,6 +5,9 @@ import type { AccountType } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 import { PageLoader } from '../../components/Layout/PageLoader';
 import { HighlightText } from '../../components/Text/HighlightText';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Minus, Plus } from 'lucide-react';
 
 interface AccountGroup {
   type: AccountType;
@@ -175,44 +178,26 @@ export function BalanceSheet() {
 
     return (
       <Fragment key={accountData.account.id}>
-        <tr
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            fontWeight: isParent ? '600' : '400',
-          }}
-        >
-          <td style={{ paddingLeft: `${12 + indent}px` }}>
+        <tr className={cn("bg-background", isParent && "font-medium")}>
+          <td className="px-3 py-2" style={{ paddingLeft: `${12 + indent}px` }}>
             {hasChildren && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="mr-1 h-6 w-6"
                 onClick={() => toggleParentExpanded(accountData.account.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '0 4px',
-                  marginRight: '4px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                }}
               >
-                {isExpanded ? '−' : '+'}
-              </button>
+                {isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              </Button>
             )}
-            {!hasChildren && <span style={{ marginLeft: '20px' }} />}
-            <span style={{ fontWeight: isParent ? '600' : '400' }}>
+            {!hasChildren && <span className="inline-block w-7" />}
+            <span className={cn(isParent && "font-medium")}>
               <HighlightText text={accountData.account.account_number.toString()} highlight={searchTerm} />
             </span>
           </td>
-          <td
-            style={{
-              position: 'sticky',
-              left: 0,
-              backgroundColor: 'var(--bg-primary)',
-              zIndex: 1, // Ensure it stays on top of scrolled content
-              borderRight: '1px solid var(--border-color)', // Visual separator
-            }}
-          >
-            <span style={{ fontWeight: isParent ? '600' : '400' }}>
+          <td className="sticky left-0 z-10 border-r bg-background px-3 py-2">
+            <span className={cn(isParent && "font-medium")}>
               <HighlightText text={accountData.account.name} highlight={searchTerm} />
             </span>
           </td>
@@ -221,10 +206,7 @@ export function BalanceSheet() {
             return (
               <td
                 key={idx}
-                style={{
-                  textAlign: 'right',
-                  fontWeight: isParent ? '600' : '400',
-                }}
+                className={cn("px-3 py-2 text-right", isParent && "font-medium")}
               >
                 {formatCurrency(balance, 'IDR')}
               </td>
@@ -247,25 +229,26 @@ export function BalanceSheet() {
   }
 
   if (error) {
-    return <div style={{ color: 'var(--error)', padding: '16px' }}>Error: {error}</div>;
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
   return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">Balance Sheet Report</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Balance Sheet</h1>
+        <p className="text-sm text-muted-foreground">
+          Compare balances across periods.
+        </p>
       </div>
 
       {/* Period Selection */}
-      <div style={{ marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'center', whiteSpace: 'nowrap', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', whiteSpace: 'nowrap' }}>
-          <label style={{ whiteSpace: 'nowrap' }}>Period Type:</label>
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Period Type</div>
           <select
             value={periodType}
-            onChange={(e) => {
-              setPeriodType(e.target.value as PeriodType);
-            }}
-            style={{ padding: '6px 12px' }}
+            onChange={(e) => setPeriodType(e.target.value as PeriodType)}
+            className="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
@@ -273,15 +256,12 @@ export function BalanceSheet() {
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', whiteSpace: 'nowrap' }}>
-          <label style={{ whiteSpace: 'nowrap' }}>Comparison:</label>
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Comparison</div>
           <select
             value={numberOfPeriods}
-            onChange={(e) => {
-              const num = parseInt(e.target.value, 10);
-              setNumberOfPeriods(num);
-            }}
-            style={{ padding: '6px 12px', minWidth: '80px' }}
+            onChange={(e) => setNumberOfPeriods(parseInt(e.target.value, 10))}
+            className="h-9 w-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
               <option key={num} value={num}>
@@ -294,79 +274,59 @@ export function BalanceSheet() {
 
       {/* Balance Sheet Table */}
       {groupedAccounts.length === 0 ? (
-        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
           No accounts found.
         </div>
       ) : (
-        <div>
+        <div className="space-y-6">
           {groupedAccounts.map((group) => {
             const parentAccounts = getParentAccounts(group.accounts);
             const isTypeExpanded = expandedTypes.has(group.type);
 
             return (
-              <div key={group.type} style={{ marginBottom: '24px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px',
-                    background: 'var(--bg-secondary)',
-                    borderBottom: '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
+              <div key={group.type} className="rounded-md border">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-4 border-b bg-muted/40 px-3 py-2 text-sm font-medium"
                   onClick={() => toggleTypeExpanded(group.type)}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '0 4px',
-                        marginRight: '8px',
-                        fontSize: '14px',
-                      }}
-                    >
-                      {isTypeExpanded ? '−' : '+'}
-                    </button>
-                    <span>{group.type}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '16px' }}>
+                  <span className="flex items-center gap-2">
+                    {isTypeExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {group.type}
+                  </span>
+                  <span className="hidden items-center gap-4 sm:flex">
                     {comparisonData.map((comp, idx) => {
                       const periodTotal = calculateTotal(comp.data.filter(item => item.account.type === group.type));
                       return (
-                        <span key={idx} style={{ fontWeight: '600', minWidth: '120px', textAlign: 'right' }}>
+                        <span key={idx} className="min-w-[120px] text-right font-medium">
                           {formatCurrency(periodTotal, 'IDR')}
                         </span>
                       );
                     })}
-                  </div>
-                </div>
+                  </span>
+                </button>
                 {isTypeExpanded && (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', minWidth: '600px' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ width: '120px', textAlign: 'left' }}>Number</th>
-                          <th style={{ textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 2, borderRight: '1px solid var(--border-color)' }}>Account Name</th>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[700px] text-sm">
+                      <thead className="text-muted-foreground">
+                        <tr className="border-b">
+                          <th className="w-[120px] px-3 py-2 text-left font-medium">Number</th>
+                          <th className="sticky left-0 z-20 border-r bg-muted/40 px-3 py-2 text-left font-medium">
+                            Account Name
+                          </th>
                           {comparisonData.map((comp, idx) => (
-                            <th key={idx} style={{ width: '150px', textAlign: 'right' }}>
+                            <th key={idx} className="w-[150px] px-3 py-2 text-right font-medium">
                               {comp.period.label}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="[&_tr:hover]:bg-muted/30">
                         {parentAccounts
                           .sort((a, b) => a.account.account_number - b.account.account_number)
-                          .map((parent) => renderAccountRow(
-                            parent,
-                            0,
-                            group.accounts,
-                            comparisonData
-                          ))}
+                          .map((parent) =>
+                            renderAccountRow(parent, 0, group.accounts, comparisonData)
+                          )}
                       </tbody>
                     </table>
                   </div>

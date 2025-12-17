@@ -13,6 +13,16 @@ import type { ExpenseFormData, Account, Contact } from '../../lib/types';
 import { formatCurrency } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { Input as ShadcnInput } from '@/components/ui/input';
+import {
+  Table as ShadcnTable,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function ExpenseForm() {
   const navigate = useNavigate();
@@ -279,15 +289,24 @@ export function ExpenseForm() {
   };
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">{isEditing ? 'Edit Expense Transaction' : 'New Expense Transaction'}</h1>
-        <Button onClick={() => navigate('/transactions')} variant="secondary">Cancel</Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {isEditing ? 'Edit Expense Transaction' : 'New Expense Transaction'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Record outgoing funds and allocate them to expense accounts.
+          </p>
+        </div>
+        <Button onClick={() => navigate('/transactions')} variant="outline">
+          Cancel
+        </Button>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-row">
-          <Input label="Transaction Number" value={transactionNumber} disabled />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input label="Transaction Number" value={transactionNumber} disabled className="bg-muted" />
           <DateInput
             label="Transaction Date"
             value={formData.transaction_date}
@@ -297,7 +316,7 @@ export function ExpenseForm() {
           />
         </div>
 
-        <div className="form-row">
+        <div className="grid gap-4 md:grid-cols-2">
           <Select
             label="Payee"
             value={formData.payee_id || ''}
@@ -305,7 +324,6 @@ export function ExpenseForm() {
               const value = e.target.value;
               if (value === '__add_new__') {
                 setShowAddContactModal(true);
-                // Reset to empty so the "Add New" option doesn't stay selected
                 setFormData({ ...formData, payee_id: null });
               } else {
                 setFormData({ ...formData, payee_id: value || null });
@@ -332,43 +350,36 @@ export function ExpenseForm() {
           onChange={(tags) => setFormData({ ...formData, tags })}
         />
 
-        <div style={{ marginTop: '24px', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3>Line Items</h3>
-            <Button type="button" onClick={handleAddItem} disabled={loading} variant="secondary">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Line Items</CardTitle>
+              <CardDescription>Allocate amounts to expense accounts.</CardDescription>
+            </div>
+            <Button type="button" onClick={handleAddItem} disabled={loading} variant="outline">
               Add Item
             </Button>
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="line-items-table">
-            <table style={{ tableLayout: 'fixed' }}>
-              <thead>
-                <tr>
-                  <th style={{ width: '400px' }}>Account</th>
-                  <th>Description</th>
-                  <th style={{ width: '150px' }}>Amount</th>
-                  <th style={{ width: '80px' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+          </CardHeader>
+          <CardContent>
+            <ShadcnTable>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[420px]">Account</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="w-[160px] text-right">Amount</TableHead>
+                  <TableHead className="w-[90px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {formData.items.map((item, index) => (
-                  <tr key={index}>
-                    <td style={{ width: '400px' }}>
+                  <TableRow key={index}>
+                    <TableCell>
                       <select
                         value={item.account_id}
                         onChange={(e) => handleItemChange(index, 'account_id', e.target.value)}
                         required
                         disabled={loading}
-                        style={{
-                          width: '100%',
-                          maxWidth: '400px',
-                          padding: '6px 8px',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '3px',
-                          backgroundColor: 'var(--bg-primary)',
-                          color: 'var(--text-primary)'
-                        }}
+                        className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="">Select account</option>
                         {accountOptions.map((opt) => (
@@ -377,62 +388,56 @@ export function ExpenseForm() {
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td>
-                      <input
+                    </TableCell>
+                    <TableCell>
+                      <ShadcnInput
                         type="text"
-                        className="form-input"
                         value={item.description}
                         onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                         disabled={loading}
+                        placeholder="Optional description"
                       />
-                    </td>
-                    <td>
-                      <input
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ShadcnInput
                         type="number"
                         step="0.01"
                         min="0"
-                        className="form-input"
                         value={item.amount || ''}
                         onChange={(e) => handleItemChange(index, 'amount', parseFloat(e.target.value) || 0)}
                         required
                         disabled={loading}
+                        className="text-right"
                       />
-                    </td>
-                    <td>
-                      {formData.items.length > 1 && (
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formData.items.length > 1 ? (
                         <Button
                           type="button"
                           onClick={() => handleRemoveItem(index)}
                           disabled={loading}
-                          variant="destructive"
+                          variant="ghost"
                           size="sm"
-                          style={{ padding: '4px 8px', fontSize: '12px' }}
                         >
                           Remove
                         </Button>
-                      )}
-                    </td>
-                  </tr>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={2} style={{ textAlign: 'right', fontWeight: 600 }}>
-                    Total:
-                  </td>
-                  <td style={{ fontWeight: 600 }}>{formatCurrency(total, 'IDR')}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          {/* Total Display */}
-          <div style={{ marginTop: '12px', fontWeight: 600 }}>
-            Total: {formatCurrency(total, 'IDR')}
-          </div>
-        </div>
+                <TableRow>
+                  <TableCell colSpan={2} className="text-right font-medium">
+                    Total
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrency(total, 'IDR')}
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableBody>
+            </ShadcnTable>
+          </CardContent>
+        </Card>
 
         <FileUpload
           label="Attachments"
@@ -440,9 +445,9 @@ export function ExpenseForm() {
           onChange={(files) => setFormData({ ...formData, attachments: files })}
         />
 
-        {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
+        {error ? <div className="text-sm text-destructive">{error}</div> : null}
 
-        <div className="form-actions">
+        <div className="flex gap-2">
           <Button type="submit" variant="default" disabled={loading}>
             {loading ? (
               <>
@@ -453,7 +458,7 @@ export function ExpenseForm() {
               isEditing ? 'Update Transaction' : 'Create Transaction'
             )}
           </Button>
-          <Button type="button" onClick={() => navigate('/transactions')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/transactions')} disabled={loading}>
             Cancel
           </Button>
         </div>

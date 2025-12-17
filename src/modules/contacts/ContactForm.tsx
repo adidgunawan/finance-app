@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Input } from '../../components/Form/Input';
 import { useToast } from '../../contexts/ToastContext';
 import type { Contact } from '../../lib/types';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ContactFormProps {
   contact?: Contact;
@@ -48,49 +50,39 @@ export function ContactForm({ contact, onSubmit, onCancel }: ContactFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      {error && (
-        <div style={{ marginBottom: '16px', padding: '8px', background: 'var(--error)', color: 'white', borderRadius: '4px', fontSize: '14px' }}>
-          {error}
-        </div>
-      )}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error ? <div className="text-sm text-destructive">{error}</div> : null}
 
-      <div className="form-group">
-        <label className="form-label">Name *</label>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Contact name"
-          required
-          disabled={loading}
-        />
-      </div>
+      <Input
+        label="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Contact name"
+        required
+        disabled={loading}
+      />
 
-      <div className="form-group">
-        <label className="form-label">Phone</label>
-        <Input
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="Phone number"
-          disabled={loading}
-        />
-      </div>
+      <Input
+        label="Phone"
+        type="tel"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        placeholder="Phone number"
+        disabled={loading}
+      />
 
-      <div className="form-group">
-        <label className="form-label">Email</label>
-        <Input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email address"
-          disabled={loading}
-        />
-      </div>
+      <Input
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email address"
+        disabled={loading}
+      />
 
-      <div className="form-group">
-        <label className="form-label">Address</label>
-        <textarea
+      <div className="space-y-2">
+        <div className="text-sm font-medium">Address</div>
+        <Textarea
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="Address"
@@ -99,13 +91,13 @@ export function ContactForm({ contact, onSubmit, onCancel }: ContactFormProps) {
         />
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '24px' }}>
-        <button type="button" onClick={onCancel} disabled={loading}>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Cancel
-        </button>
-        <button type="submit" className="primary" disabled={loading}>
+        </Button>
+        <Button type="submit" disabled={loading}>
           {loading ? 'Saving...' : contact ? 'Update' : 'Create'}
-        </button>
+        </Button>
       </div>
     </form>
   );

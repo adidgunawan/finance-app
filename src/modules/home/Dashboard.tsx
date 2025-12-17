@@ -16,7 +16,7 @@ export function Dashboard() {
 
   if (data.loading) {
     return (
-      <div className="container flex items-center justify-center min-h-[600px]">
+      <div className="flex min-h-[600px] items-center justify-center">
         <div className="text-muted-foreground">Loading dashboard...</div>
       </div>
     );
@@ -37,11 +37,11 @@ export function Dashboard() {
   const monthLabel = selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="container pb-8">
+    <div className="space-y-6 pb-8">
       {/* Header with Month Selector */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-1">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">Comprehensive financial insights</p>
         </div>
         <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Total Income</CardDescription>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTransactions } from './hooks/useTransactions';
 import { useSearch } from '../../contexts/SearchContext';
@@ -8,6 +8,22 @@ import { useToast } from '../../contexts/ToastContext';
 import { PageLoader } from '../../components/Layout/PageLoader';
 import type { Transaction } from '../../lib/types';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export function TransactionList() {
   const { transactions, loading, error, deleteTransaction, deleteTransactions } = useTransactions();
@@ -15,26 +31,7 @@ export function TransactionList() {
   const navigate = useNavigate();
   const { searchTerm, setSearchTerm } = useSearch();
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [showDesktopMenu, setShowDesktopMenu] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close desktop menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowDesktopMenu(false);
-      }
-    };
-
-    if (showDesktopMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showDesktopMenu]);
 
   // Clear selection when transactions change or filters change
   useEffect(() => {
@@ -116,16 +113,7 @@ export function TransactionList() {
         <Link
           to={`/transactions/${transaction.id}`}
           onClick={(e) => e.stopPropagation()}
-          style={{
-            color: 'var(--accent)',
-            textDecoration: 'none',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.textDecoration = 'underline';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.textDecoration = 'none';
-          }}
+          className="text-primary underline-offset-4 hover:underline"
         >
           <HighlightText text={value} highlight={searchTerm} />
         </Link>
@@ -188,20 +176,16 @@ export function TransactionList() {
           return '-';
         }
         return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+          <div className="flex flex-wrap gap-2">
             {transaction.tags.map((tag, index) => (
-              <span
+              <Badge
                 key={index}
-                className="tag"
-                style={{
-                  fontSize: '12px',
-                  padding: '2px 6px',
-                }}
+                variant="secondary"
               >
                 {searchTerm && tag.toLowerCase().includes(searchTerm.toLowerCase())
                   ? <HighlightText text={tag} highlight={searchTerm} />
                   : tag}
-              </span>
+              </Badge>
             ))}
           </div>
         );
@@ -223,20 +207,13 @@ export function TransactionList() {
       label: 'Actions',
       width: '150px',
       render: (_value, transaction) => (
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => handleEdit(transaction)}
-            style={{ fontSize: '12px', padding: '4px 8px' }}
-          >
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="outline" onClick={() => handleEdit(transaction)}>
             Edit
-          </button>
-          <button
-            className="danger"
-            onClick={() => handleDelete(transaction)}
-            style={{ fontSize: '12px', padding: '4px 8px' }}
-          >
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => handleDelete(transaction)}>
             Delete
-          </button>
+          </Button>
         </div>
       ),
     },
@@ -247,118 +224,62 @@ export function TransactionList() {
   }
 
   if (error) {
-    return <div style={{ color: 'var(--error)' }}>Error: {error}</div>;
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
   const handleTransactionTypeSelect = (type: 'Income' | 'Expense' | 'Transfer') => {
-    setShowDesktopMenu(false);
     navigate(`/transactions/${type.toLowerCase()}/new`);
   };
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">Transactions</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and manage all transactions.
+          </p>
+        </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="flex flex-wrap items-center gap-2">
           {selectedIds.length > 0 && (
-            <button
-              className="danger"
-              onClick={handleBatchDelete}
-            >
+            <Button variant="destructive" onClick={handleBatchDelete}>
               Delete Selected ({selectedIds.length})
-            </button>
+            </Button>
           )}
 
-          <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
-            <button className="primary" onClick={() => setShowDesktopMenu(!showDesktopMenu)}>
-              Add Transaction
-            </button>
-            {showDesktopMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '4px',
-                  background: 'var(--bg-primary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '3px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  zIndex: 1000,
-                  minWidth: '150px',
-                }}
-              >
-                <button
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  onClick={() => handleTransactionTypeSelect('Income')}
-                >
-                  Income
-                </button>
-                <button
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    borderTop: '1px solid var(--border-color)',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  onClick={() => handleTransactionTypeSelect('Expense')}
-                >
-                  Expense
-                </button>
-                <button
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    borderTop: '1px solid var(--border-color)',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  onClick={() => handleTransactionTypeSelect('Transfer')}
-                >
-                  Transfer
-                </button>
-              </div>
-            )}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>Add Transaction</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleTransactionTypeSelect('Income')}>
+                Income
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleTransactionTypeSelect('Expense')}>
+                Expense
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleTransactionTypeSelect('Transfer')}>
+                Transfer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          style={{ width: '160px', fontSize: '13px' }}
-        >
-          <option value="all">All Types</option>
-          <option value="Income">Income</option>
-          <option value="Expense">Expense</option>
-          <option value="Transfer">Transfer</option>
-        </select>
+      <div className="flex items-center gap-3">
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="Income">Income</SelectItem>
+            <SelectItem value="Expense">Expense</SelectItem>
+            <SelectItem value="Transfer">Transfer</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Table

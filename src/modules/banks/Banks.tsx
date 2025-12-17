@@ -12,11 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency } from '../../lib/utils';
 import type { Bank, Account } from '../../lib/types';
+import { Loader2 } from 'lucide-react';
 
 export function Banks() {
   const {
@@ -217,21 +219,17 @@ export function Banks() {
   }
 
   if (error && banks.length === 0) {
-    return <div style={{ color: 'var(--error)' }}>Error: {error}</div>;
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">Banks</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="primary" onClick={handleAdd}>
-            Add Bank
-          </button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Banks</h1>
+          <p className="text-sm text-muted-foreground">Manage your banks and linked wallet accounts.</p>
         </div>
-      </div>
-
-      <div style={{ marginBottom: '16px' }}>
+        <Button onClick={handleAdd}>Add Bank</Button>
       </div>
 
       <Table
@@ -243,35 +241,37 @@ export function Banks() {
             label: 'Actions',
             width: '200px',
             render: (_value, bank) => (
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button
+              <div className="flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleViewDetails(bank);
                   }}
-                  style={{ fontSize: '12px', padding: '4px 8px' }}
                 >
                   View
-                </button>
-                <button
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEdit(bank);
                   }}
-                  style={{ fontSize: '12px', padding: '4px 8px' }}
                 >
                   Edit
-                </button>
-                <button
-                  className="danger"
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(bank);
                   }}
-                  style={{ fontSize: '12px', padding: '4px 8px' }}
                 >
                   Delete
-                </button>
+                </Button>
               </div>
             ),
           },
@@ -284,24 +284,22 @@ export function Banks() {
           <DialogHeader>
             <DialogTitle>{editingBank ? 'Edit Bank' : 'Add Bank'}</DialogTitle>
           </DialogHeader>
-        <form onSubmit={handleFormSubmit}>
-          <div className="form-group">
-            <Input
-              label="Bank Name"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              required
-              disabled={formLoading}
-              autoFocus
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button type="button" onClick={handleFormCancel} disabled={formLoading}>
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          <Input
+            label="Bank Name"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            required
+            disabled={formLoading}
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={handleFormCancel} disabled={formLoading}>
               Cancel
-            </button>
-            <button type="submit" className="primary" disabled={formLoading}>
+            </Button>
+            <Button type="submit" disabled={formLoading}>
               {editingBank ? 'Update' : 'Create'}
-            </button>
+            </Button>
           </div>
         </form>
       </DialogContent>
@@ -314,32 +312,18 @@ export function Banks() {
             <DialogTitle>{selectedBank ? `${selectedBank.name} - Details` : 'Bank Details'}</DialogTitle>
           </DialogHeader>
         {detailLoading && (!selectedBank || !selectedBank.accounts) ? (
-          <div style={{
-            padding: '40px 20px',
-            textAlign: 'center',
-            minHeight: '200px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div className="spinner" style={{ marginBottom: '16px' }} />
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '400' }}>Loading...</div>
+          <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 py-10 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <div className="text-sm">Loading...</div>
           </div>
         ) : selectedBank ? (
           <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '4px' }}>
             {/* Total Balance */}
-            <div style={{
-              marginBottom: '24px',
-              padding: '16px',
-              backgroundColor: 'var(--bg-secondary)',
-              borderRadius: '4px',
-              border: '1px solid var(--border-color)'
-            }}>
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+            <div className="mb-6 rounded-md border bg-muted/40 p-4">
+              <div className="mb-1 text-sm text-muted-foreground">
                 Total Balance (All Wallets)
               </div>
-              <div style={{ fontSize: '24px', fontWeight: '600', color: 'var(--text-primary)' }}>
+              <div className="text-2xl font-semibold">
                 {formatCurrency(selectedBank.totalBalance || 0, 'IDR')}
               </div>
             </div>
@@ -351,45 +335,46 @@ export function Banks() {
               </h3>
 
               {selectedBank.accounts && selectedBank.accounts.length > 0 ? (
-                <div style={{ border: '1px solid var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="overflow-hidden rounded-md border">
+                  <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                        <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600' }}>
+                      <tr className="bg-muted/40">
+                        <th className="px-3 py-2 text-left font-medium">
                           Account Number
                         </th>
-                        <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600' }}>
+                        <th className="px-3 py-2 text-left font-medium">
                           Name
                         </th>
-                        <th style={{ padding: '12px', textAlign: 'right', fontSize: '13px', fontWeight: '600' }}>
+                        <th className="px-3 py-2 text-right font-medium">
                           Balance
                         </th>
-                        <th style={{ padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: '600', width: '100px' }}>
+                        <th className="w-[120px] px-3 py-2 text-center font-medium">
                           Actions
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedBank.accounts.map((account) => (
-                        <tr key={account.id} style={{ borderTop: '1px solid var(--border-color)' }}>
-                          <td style={{ padding: '12px', fontSize: '13px' }}>
+                        <tr key={account.id} className="border-t">
+                          <td className="px-3 py-2">
                             {account.account_number}
                           </td>
-                          <td style={{ padding: '12px', fontSize: '13px' }}>
+                          <td className="px-3 py-2">
                             {account.name}
                           </td>
-                          <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: '500' }}>
+                          <td className="px-3 py-2 text-right font-medium">
                             {formatCurrency(account.balance || 0, 'IDR')}
                           </td>
-                          <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <button
+                          <td className="px-3 py-2 text-center">
+                            <Button
+                              type="button"
                               onClick={() => handleRemoveWallet(account.id, account.name)}
                               disabled={isUpdatingWallets}
-                              className="danger"
-                              style={{ fontSize: '12px', padding: '4px 8px' }}
+                              variant="destructive"
+                              size="sm"
                             >
                               Remove
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -397,62 +382,41 @@ export function Banks() {
                   </table>
                 </div>
               ) : (
-                <div style={{
-                  padding: '24px',
-                  textAlign: 'center',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '4px',
-                  backgroundColor: 'var(--bg-secondary)'
-                }}>
+                <div className="rounded-md border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
                   No wallet accounts connected to this bank
                 </div>
               )}
             </div>
 
             {/* Add Wallet Section */}
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'var(--bg-secondary)',
-              borderRadius: '4px',
-              border: '1px solid var(--border-color)'
-            }}>
-              <h3 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>
-                Add Wallet Account
-              </h3>
-              <div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
-                  <div style={{ flex: 1 }}>
-                    <select
-                      className="form-input"
-                      value={selectedWalletToAdd}
-                      onChange={(e) => setSelectedWalletToAdd(e.target.value)}
-                      disabled={isUpdatingWallets || availableWallets.length === 0}
-                    >
-                      <option value="">Select wallet account...</option>
-                      {availableWallets.map((wallet) => (
-                        <option key={wallet.id} value={wallet.id}>
-                          {wallet.account_number} - {wallet.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                    onClick={handleAddWallet}
-                    disabled={isUpdatingWallets || !selectedWalletToAdd || availableWallets.length === 0}
-                    className="primary"
-                    style={{
-                      padding: '6px 16px',
-                      whiteSpace: 'nowrap',
-                      fontSize: '14px'
-                    }}
+            <div className="rounded-md border bg-muted/40 p-4">
+              <h3 className="mb-3 text-sm font-semibold">Add Wallet Account</h3>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <select
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={selectedWalletToAdd}
+                    onChange={(e) => setSelectedWalletToAdd(e.target.value)}
+                    disabled={isUpdatingWallets || availableWallets.length === 0}
                   >
-                    Add Wallet
-                  </button>
+                    <option value="">Select wallet account...</option>
+                    {availableWallets.map((wallet) => (
+                      <option key={wallet.id} value={wallet.id}>
+                        {wallet.account_number} - {wallet.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+                <Button
+                  type="button"
+                  onClick={handleAddWallet}
+                  disabled={isUpdatingWallets || !selectedWalletToAdd || availableWallets.length === 0}
+                >
+                  Add Wallet
+                </Button>
               </div>
               {availableWallets.length === 0 && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <div className="mt-2 text-xs text-muted-foreground">
                   No available wallet accounts to add
                 </div>
               )}

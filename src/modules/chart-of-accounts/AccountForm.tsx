@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { generateAccountNumber } from '../../lib/utils';
 import { useBanks } from '../banks/hooks/useBanks';
 import { useToast } from '../../contexts/ToastContext';
@@ -137,12 +139,12 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="form-row">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Input
           label="Account Number"
           value={generatedAccountNumber}
           disabled
-          style={{ backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed' }}
+          className="bg-muted"
         />
         <Input
           label="Account Name"
@@ -170,7 +172,7 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           disabled={loading || parentOptions.length === 0}
         />
       </div>
-      <div className="form-row">
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Input
           label="Initial Balance"
           type="number"
@@ -186,62 +188,24 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           disabled={loading}
         />
       </div>
-      <div className="form-group">
-        <label 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '10px', 
-            cursor: loading ? 'not-allowed' : 'pointer',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            backgroundColor: isWallet ? 'var(--bg-secondary)' : 'transparent',
-            border: `1px solid ${isWallet ? 'var(--accent)' : 'var(--border-color)'}`,
-            transition: 'all 0.2s',
-            userSelect: 'none',
-          }}
-          onMouseEnter={(e) => {
-            if (!loading) {
-              e.currentTarget.style.backgroundColor = isWallet ? 'var(--bg-hover)' : 'var(--bg-secondary)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = isWallet ? 'var(--bg-secondary)' : 'transparent';
-          }}
-        >
-          <input
-            type="checkbox"
+      <div className="mt-4">
+        <div className="flex items-start gap-3 rounded-md border p-3">
+          <Checkbox
             checked={isWallet}
-            onChange={(e) => setIsWallet(e.target.checked)}
+            onCheckedChange={(checked) => setIsWallet(Boolean(checked))}
             disabled={loading}
-            style={{ 
-              cursor: loading ? 'not-allowed' : 'pointer',
-              width: '18px',
-              height: '18px',
-              accentColor: 'var(--accent)',
-            }}
+            className="mt-1"
           />
-          <span style={{ 
-            fontSize: '14px',
-            fontWeight: isWallet ? '500' : '400',
-            color: 'var(--text-primary)',
-            lineHeight: '1.4',
-          }}>
-            Wallet Account
-            <span style={{ 
-              display: 'block',
-              fontSize: '12px',
-              color: 'var(--text-secondary)',
-              fontWeight: '400',
-              marginTop: '2px',
-            }}>
+          <div className="space-y-1 leading-none">
+            <div className="text-sm font-medium">Wallet Account</div>
+            <div className="text-sm text-muted-foreground">
               Cash, Bank, Credit Card
-            </span>
-          </span>
-        </label>
+            </div>
+          </div>
+        </div>
       </div>
       {isWallet && (
-        <div className="form-group">
+        <div className="mt-4">
           <Select
             label="Bank"
             value={bankId}
@@ -251,14 +215,14 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           />
         </div>
       )}
-      {error && <div style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</div>}
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button type="submit" className="primary" disabled={loading}>
+      {error && <div className="mt-4 text-sm text-destructive">{error}</div>}
+      <div className="mt-4 flex gap-2">
+        <Button type="submit" disabled={loading}>
           {account ? 'Update' : 'Create'} Account
-        </button>
-        <button type="button" onClick={onCancel} disabled={loading}>
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Cancel
-        </button>
+        </Button>
       </div>
 
       <Dialog open={showBankModal} onOpenChange={() => {
@@ -269,7 +233,7 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
           <DialogHeader>
             <DialogTitle>Add New Bank</DialogTitle>
           </DialogHeader>
-        <div className="form-group">
+        <div className="space-y-4">
           <Input
             label="Bank Name"
             value={newBankName}
@@ -285,9 +249,10 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
             }}
           />
         </div>
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <button
+        <div className="flex justify-end gap-2">
+          <Button
             type="button"
+            variant="outline"
             onClick={() => {
               setShowBankModal(false);
               setNewBankName('');
@@ -295,15 +260,14 @@ export function AccountForm({ account, accounts, onSubmit, onCancel }: AccountFo
             disabled={creatingBank}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleCreateBank}
-            className="primary"
             disabled={creatingBank || !newBankName.trim()}
           >
             Create Bank
-          </button>
+          </Button>
         </div>
       </DialogContent>
       </Dialog>
