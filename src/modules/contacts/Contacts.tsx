@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { FiPlus } from 'react-icons/fi';
 import { useContacts } from './hooks/useContacts';
 import { useSearch } from '../../contexts/SearchContext';
 import { Table, Column } from '../../components/Table/Table';

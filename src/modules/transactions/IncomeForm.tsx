@@ -431,69 +431,6 @@ export function IncomeForm() {
             </table>
           </div>
 
-          {/* Mobile Card View */}
-          <div className="line-items-mobile">
-            {formData.items.map((item, index) => (
-              <div key={index} className="line-item-card">
-                <div className="line-item-card-header">
-                  <span>Item {index + 1}</span>
-                  {formData.items.length > 1 && (
-                    <Button
-                      type="button"
-                      onClick={() => handleRemoveItem(index)}
-                      disabled={loading}
-                      variant="destructive"
-                      size="sm"
-                      style={{ padding: '4px 8px', fontSize: '12px' }}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Account</label>
-                  <select
-                    value={item.account_id}
-                    onChange={(e) => handleItemChange(index, 'account_id', e.target.value)}
-                    required
-                    disabled={loading}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="">Select account</option>
-                    {accountOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Description</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={item.description}
-                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Amount</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="form-input"
-                    value={item.amount || ''}
-                    onChange={(e) => handleItemChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
           {/* Total Display */}
           <div style={{ marginTop: '12px', fontWeight: 600 }}>
             Total: {formatCurrency(total, 'IDR')}

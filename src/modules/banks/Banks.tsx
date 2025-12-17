@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { FiPlus } from 'react-icons/fi';
 import { useSearch } from '../../contexts/SearchContext';
 import { useBanks, BankWithDetails } from './hooks/useBanks';
 import { useAccounts } from '../chart-of-accounts/hooks/useAccounts';

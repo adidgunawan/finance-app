@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid
 } from 'recharts';
 import { FiChevronLeft, FiChevronRight, FiTrendingUp, FiTrendingDown, FiArrowUp, FiArrowDown } from 'react-icons/fi';
@@ -12,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { cn } from '@/lib/utils';
 
 export function Dashboard() {
-  const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const data = useDashboardData(selectedMonth);
 
@@ -71,7 +69,7 @@ export function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Total Income</CardDescription>
@@ -221,7 +219,7 @@ export function Dashboard() {
       </Card>
 
       {/* Charts Row 1: Income vs Expenses & Category Breakdowns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Income vs Expenses Comparison */}
         <Card>
           <CardHeader>
@@ -246,7 +244,7 @@ export function Dashboard() {
                   {[
                     { name: 'Income', amount: data.currentMonthIncome },
                     { name: 'Expenses', amount: data.currentMonthExpense },
-                  ].map((entry, index) => (
+                  ].map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={index === 0 ? '#10B981' : '#EF4444'} />
                   ))}
                 </Bar>
@@ -266,11 +264,13 @@ export function Dashboard() {
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
-                    data={data.expenseCategories}
+                    data={data.expenseCategories as any}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+                    label={(props: any) =>
+                      `${props?.name ?? ''}: ${((props?.percent ?? 0) * 100).toFixed(1)}%`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="amount"
@@ -292,7 +292,7 @@ export function Dashboard() {
       </div>
 
       {/* Charts Row 2: Daily Cash Flow & Account Balances */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Daily Cash Flow */}
         <Card>
           <CardHeader>
@@ -379,7 +379,7 @@ export function Dashboard() {
       </div>
 
       {/* Charts Row 3: Net Worth & Income Categories */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Net Worth Summary */}
         <Card>
           <CardHeader>
@@ -424,11 +424,13 @@ export function Dashboard() {
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
-                    data={data.incomeCategories}
+                    data={data.incomeCategories as any}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+                    label={(props: any) =>
+                      `${props?.name ?? ''}: ${((props?.percent ?? 0) * 100).toFixed(1)}%`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="amount"
@@ -450,7 +452,7 @@ export function Dashboard() {
       </div>
 
       {/* Bottom Row: Top Transactions & Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Top Expenses */}
         <Card>
           <CardHeader>
@@ -517,7 +519,7 @@ export function Dashboard() {
           <CardDescription>Analysis and projections for {monthLabel}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
               <div className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Average Daily Spending</div>
               <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">

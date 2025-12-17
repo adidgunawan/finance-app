@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '../../components/ui/dialog';
 import { PageLoader } from '../../components/Layout/PageLoader';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -349,116 +349,6 @@ export function ChartOfAccounts() {
           </>
         )}
       </Fragment>
-    );
-  };
-
-  const renderMobileAccountRow = (account: Account, level: number = 0, typeAccounts: Account[]) => {
-    const children = getChildAccounts(account.id, typeAccounts);
-    const hasChildren = children.length > 0;
-    const isExpanded = expandedParents.has(account.id);
-    const hasLinkedTransactions = accountsWithTransactions.has(account.id);
-    const indent = level * 16;
-    const isParent = level === 0;
-
-    return (
-      <Fragment key={account.id}>
-        <div
-          onClick={() => hasChildren && toggleParentExpanded(account.id)}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 0',
-            borderBottom: '1px solid var(--border-color)',
-            backgroundColor: 'var(--bg-primary)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', flex: 1, paddingLeft: `${indent}px` }}>
-            {/* Expand Icon - smaller footprint */}
-            <div
-              style={{
-                width: '24px',
-                display: 'flex',
-                justifyContent: 'center',
-                marginRight: '4px',
-                visibility: hasChildren ? 'visible' : 'hidden'
-              }}
-            >
-              <div style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '14px' }}>
-                {isExpanded ? '−' : '+'}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{
-                fontWeight: isParent ? '600' : '400',
-                fontSize: '15px',
-                color: 'var(--text-primary)',
-                marginBottom: '2px'
-              }}>
-                <HighlightText text={account.name} highlight={searchTerm} />
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                <HighlightText text={account.account_number.toString()} highlight={searchTerm} />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: '12px' }}>
-            <div style={{ fontWeight: isParent ? '500' : '400', fontSize: '14px', marginBottom: '4px' }}>
-              {account.balance !== undefined ? formatCurrency(account.balance, 'IDR') : '-'}
-            </div>
-
-            {/* Compact Actions - Icon only or minimal text */}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit(account);
-                }}
-                style={{
-                  fontSize: '11px',
-                  padding: '2px 8px',
-                  height: 'auto',
-                  border: '1px solid var(--border-color)',
-                  background: 'transparent'
-                }}
-              >
-                Edit
-              </button>
-              {/* Only show delete if no link, to save space, or show disabled state subtly */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(account);
-                }}
-                disabled={hasLinkedTransactions}
-                style={{
-                  fontSize: '11px',
-                  padding: '2px 8px',
-                  height: 'auto',
-                  border: '1px solid var(--border-color)',
-                  color: hasLinkedTransactions ? 'var(--text-tertiary)' : 'var(--error)',
-                  background: 'transparent',
-                  borderColor: hasLinkedTransactions ? 'var(--border-color)' : 'var(--error-light, #ffdcd9)' // subtle red border or default
-                }}
-              >
-                Del
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {
-          hasChildren && isExpanded && (
-            <>
-              {children
-                .sort((a, b) => a.account_number - b.account_number)
-                .map((child) => renderMobileAccountRow(child, level + 1, typeAccounts))}
-            </>
-          )
-        }
-      </Fragment >
     );
   };
 

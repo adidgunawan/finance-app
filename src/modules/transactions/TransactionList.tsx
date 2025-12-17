@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiPlus } from 'react-icons/fi';
 import { useTransactions } from './hooks/useTransactions';
 import { useSearch } from '../../contexts/SearchContext';
 import { Table, Column } from '../../components/Table/Table';
@@ -36,8 +35,6 @@ export function TransactionList() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showDesktopMenu]);
-
-  // Close mobile menu when clicking outside (optional, or rely on backdrop)
 
   // Clear selection when transactions change or filters change
   useEffect(() => {

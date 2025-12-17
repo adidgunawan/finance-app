@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useState, KeyboardEvent } from 'react';
 import { Input as ShadcnInput } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
