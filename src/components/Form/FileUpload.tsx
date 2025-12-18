@@ -51,7 +51,7 @@ export function FileUpload({ label, value, onChange, accept, multiple = true, er
           type="button" 
           variant="outline" 
           onClick={() => fileInputRef.current?.click()}
-          className={cn(error && 'border-destructive')}
+          className={cn('h-10', error && 'border-destructive')}
         >
           Choose Files
         </Button>

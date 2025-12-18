@@ -27,19 +27,19 @@ export function CsvTransactionTable({
 }: CsvTransactionTableProps) {
   const getMatchStatusBadge = (rowIndex: number) => {
     const status = matches.get(rowIndex);
-    if (!status || status === 'pending') {
-      return null;
-    }
-
-    const styles: Record<MatchStatus, { className: string; text: string }> = {
+    
+    const styles: Record<MatchStatus | 'unmatched', { className: string; text: string }> = {
       matched: { className: 'bg-emerald-50 text-emerald-700 border-emerald-200', text: 'Matched' },
       new: { className: 'bg-amber-50 text-amber-700 border-amber-200', text: 'New Transaction' },
-      pending: { className: '', text: '' },
+      pending: { className: 'bg-slate-50 text-slate-600 border-slate-200', text: 'Unmatched' },
+      unmatched: { className: 'bg-slate-50 text-slate-600 border-slate-200', text: 'Unmatched' },
     };
 
+    const displayStatus = (!status || status === 'pending') ? 'unmatched' : status;
+
     return (
-      <Badge variant="outline" className={styles[status].className}>
-        {styles[status].text}
+      <Badge variant="outline" className={styles[displayStatus].className}>
+        {styles[displayStatus].text}
       </Badge>
     );
   };
@@ -70,22 +70,32 @@ export function CsvTransactionTable({
         <TableBody>
           {rows.map((row, index) => (
             <TableRow key={index}>
-              <TableCell>{formatDate(row.date)}</TableCell>
-              <TableCell className="max-w-[520px]">
-                <div className="truncate" title={row.description}>
+              <TableCell className="align-top py-3">{formatDate(row.date)}</TableCell>
+              <TableCell className="max-w-[520px] align-top py-3">
+                <div 
+                  className="pr-2" 
+                  title={row.description}
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {searchTerm ? <HighlightText text={row.description} highlight={searchTerm} /> : row.description}
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="align-top py-3">
                 {searchTerm ? <HighlightText text={row.branch} highlight={searchTerm} /> : row.branch}
               </TableCell>
-              <TableCell className={row.type === 'debit' ? 'text-right text-destructive' : 'text-right text-emerald-600'}>
+              <TableCell className={`text-right align-top py-3 ${row.type === 'debit' ? 'text-destructive' : 'text-emerald-600'}`}>
                 {searchTerm ? <HighlightText text={formatCurrency(row.amount, 'IDR')} highlight={searchTerm} /> : formatCurrency(row.amount, 'IDR')}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-right align-top py-3">
                 {formatCurrency(row.balance, 'IDR')}
               </TableCell>
-              <TableCell className="text-center">
+              <TableCell className="text-center align-top py-3">
                 <Badge
                   variant="outline"
                   className={row.type === 'debit'
@@ -96,10 +106,10 @@ export function CsvTransactionTable({
                   {row.type.toUpperCase()}
                 </Badge>
               </TableCell>
-              <TableCell className="text-center">
+              <TableCell className="text-center align-top py-3">
                 {getMatchStatusBadge(index)}
               </TableCell>
-              <TableCell className="text-center">
+              <TableCell className="text-center align-top py-3">
                 {onFindTransaction ? (
                   <Button size="sm" onClick={() => onFindTransaction(index, row)}>
                     Find Transaction

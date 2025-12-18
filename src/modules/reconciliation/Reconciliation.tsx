@@ -53,6 +53,7 @@ export function Reconciliation() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const isManuallyLoadingSession = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const walletAccounts = accounts.filter((a) => a.is_wallet === true);
 
@@ -403,16 +404,11 @@ export function Reconciliation() {
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* Single Row: Wallet Account, Bank Name, Session, Upload */}
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '16px',
-          alignItems: 'flex-start'
-        }}>
+      <div className="space-y-6">
+        {/* Controls Row: Wallet Account, Bank Name, Session, Upload */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Wallet Account */}
-          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
+          <div>
             <Select
               label="Wallet Account"
               value={selectedAccountId || ''}
@@ -432,7 +428,7 @@ export function Reconciliation() {
           </div>
 
           {/* Bank Name */}
-          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
+          <div>
             <Select
               label="Bank Name"
               value={bankName || ''}
@@ -445,62 +441,46 @@ export function Reconciliation() {
           </div>
 
           {/* Session Selection */}
-          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
+          <div>
             {sessions.length > 0 ? (
-              <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1, position: 'relative' }}>
-                  <Select
-                    label="Session"
-                    value={currentSession?.id || ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value) {
-                        handleLoadSession(value);
-                      } else {
-                        // Clear session selection - create new session
-                        // Clear everything synchronously
-                        isManuallyLoadingSession.current = true;
-                        clearCurrentSession();
-                        setCsvData(null);
-                        setMatches(new Map());
-                        setCsvFile(null);
-                        // Reset flag immediately - state updates will trigger re-render
-                        setTimeout(() => {
-                          isManuallyLoadingSession.current = false;
-                        }, 50);
-                      }
-                    }}
-                    disabled={isProcessing}
-                    options={[
-                      { value: '', label: 'Create New...' },
-                      ...sessions.map((session) => {
-                        const bankName = session.account?.bank?.name || session.bank_name || 'Unknown';
-                        return {
-                          value: session.id,
-                          label: `${session.account?.name || 'Account'} - ${bankName} (${new Date(session.created_at).toLocaleDateString()})`,
-                        };
-                      }),
-                    ]}
-                  />
-                  {isProcessing && (
-                    <div
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"
-                    >
-                      Loading...
-                    </div>
-                  )}
-                </div>
-                {currentSession && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteSession(currentSession.id)}
-                    disabled={isProcessing}
-                    title="Delete this session"
-                  >
-                    Delete
-                  </Button>
+              <div className="relative">
+                <Select
+                  label="Session"
+                  value={currentSession?.id || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value) {
+                      handleLoadSession(value);
+                    } else {
+                      // Clear session selection - create new session
+                      // Clear everything synchronously
+                      isManuallyLoadingSession.current = true;
+                      clearCurrentSession();
+                      setCsvData(null);
+                      setMatches(new Map());
+                      setCsvFile(null);
+                      // Reset flag immediately - state updates will trigger re-render
+                      setTimeout(() => {
+                        isManuallyLoadingSession.current = false;
+                      }, 50);
+                    }
+                  }}
+                  disabled={isProcessing}
+                  options={[
+                    { value: '', label: 'Create New...' },
+                    ...sessions.map((session) => {
+                      const bankName = session.account?.bank?.name || session.bank_name || 'Unknown';
+                      return {
+                        value: session.id,
+                        label: `${session.account?.name || 'Account'} - ${bankName} (${new Date(session.created_at).toLocaleDateString()})`,
+                      };
+                    }),
+                  ]}
+                />
+                {isProcessing && (
+                  <div className="pointer-events-none absolute right-3 top-[calc(50%+12px)] -translate-y-1/2 text-xs text-muted-foreground">
+                    Loading...
+                  </div>
                 )}
               </div>
             ) : (
@@ -514,36 +494,89 @@ export function Reconciliation() {
             )}
           </div>
 
-          {/* CSV Upload */}
-          <div style={{ marginBottom: 0, flex: '1 1 200px' }}>
-            {selectedAccountId && bankName ? (
-              <div>
-                <div className="mb-2 text-sm font-medium">Upload CSV</div>
-                <FileUpload
-                  value={csvFile ? [csvFile] : []}
-                  onChange={handleFileUpload}
-                  accept=".csv,.CSV,text/csv"
-                  multiple={false}
-                />
-                {isProcessing && (
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Processing...
-                  </div>
-                )}
-                {csvFile && !isProcessing && (
-                  <div className="mt-1 truncate text-xs text-muted-foreground">
-                    {csvFile.name}
-                  </div>
+          {/* CSV Upload and Delete */}
+          <div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Upload CSV
+              </label>
+              <div className="flex gap-2">
+                {selectedAccountId && bankName ? (
+                  <>
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".csv,.CSV,text/csv"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) {
+                            handleFileUpload(files);
+                          }
+                          // Reset input
+                          if (e.target) {
+                            e.target.value = '';
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full h-10"
+                      >
+                        Choose Files
+                      </Button>
+                    </div>
+                    {currentSession && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => handleDeleteSession(currentSession.id)}
+                        disabled={isProcessing}
+                        title="Delete this session"
+                        className="h-10"
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button type="button" variant="outline" disabled className="flex-1 h-10">
+                      Choose Files
+                    </Button>
+                    {currentSession && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => handleDeleteSession(currentSession.id)}
+                        disabled={isProcessing}
+                        title="Delete this session"
+                        className="h-10"
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Upload CSV</div>
-                <Button type="button" variant="outline" disabled>
-                  Choose Files
-                </Button>
-              </div>
-            )}
+              {selectedAccountId && bankName && (
+                <>
+                  {isProcessing && (
+                    <div className="text-xs text-muted-foreground">
+                      Processing...
+                    </div>
+                  )}
+                  {csvFile && !isProcessing && (
+                    <div className="truncate text-xs text-muted-foreground">
+                      {csvFile.name}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 
